@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Labscout scorecard</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E4E4E1}
+a{color:#111}a:hover{color:#444}
+.lr-row:hover{background:#EAEAE6}
+.lr-row.hot:hover{background:#2A2A27}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 40px 24px 64px; background: #E4E4E1; color: #111111; font-family: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif">
+  <section style="max-width: 1280px; margin: 0 auto; box-sizing: border-box; padding: 28px clamp(16px, 3vw, 40px) 40px; background: #F4F4F1; border: 1.5px solid #111111; border-radius: 12px; display: flex; flex-direction: column; gap: 28px">
+
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.06em">
+      <a href="Main.dc.html" style="min-height: 44px; display: flex; align-items: center; text-decoration: none; color: #111111">← BACK TO DRAWER</a>
+      <span style="color: #4A4A45">SCORECARD · FILE 017 · REFRESHED 24 OCT 2026 09:00</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); border: 1.5px solid #111111; border-radius: 8px; overflow: hidden">
+      <div style="padding: 20px 24px; background: #111111; color: #F4F4F1; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.08em; color: #C9C9C3">SPINOUT SCORE</span>
+        <div style="display: flex; align-items: baseline; gap: 8px">
+          <span style="font-size: 96px; line-height: 0.9; font-weight: 600; letter-spacing: -0.04em">{{ score }}</span>
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; color: #C9C9C3">/100</span>
+        </div>
+        <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px">+22 in 90 days</span>
+      </div>
+      <div style="padding: 20px 26px; display: flex; flex-direction: column; gap: 10px; justify-content: center">
+        <h1 style="margin: 0; font-size: 36px; line-height: 1.05; font-weight: 600; letter-spacing: -0.02em">Maya Lindqvist</h1>
+        <p style="margin: 0; font-size: 19px; line-height: 1.35; text-wrap: pretty">A team is forming around her patent, I-Corps money is in hand, and her postdoc ends in December. No company yet.</p>
+      </div>
+      <div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; justify-content: center">
+        <div style="padding: 14px; background: {{ accent }}; border: 1.5px solid #111111; border-radius: 6px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 17px; letter-spacing: 0.04em; text-align: center">{{ verdict }}</div>
+        <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.5; color: #3A3A36">Intent × momentum + track record</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; border: 1.5px solid #111111; border-radius: 8px; overflow: hidden">
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+        <div style="display: flex; flex-direction: column; border-top: {{ r.divider }}">
+          <button type="button" class="{{ r.cls }}" onClick="{{ r.toggle }}" aria-expanded="{{ r.expanded }}" style="all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; min-height: 84px; padding: 16px 24px; background: {{ r.bg }}; color: {{ r.fg }}">
+            <span style="flex: 0 0 220px; display: flex; flex-direction: column; gap: 4px">
+              <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 700; letter-spacing: 0.04em">{{ r.stage }}</span>
+              <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.06em; opacity: 0.85">{{ r.tag }}</span>
+            </span>
+            <span style="flex: 1 1 320px; max-width: 420px; display: flex; align-items: center; gap: 14px">
+              <span style="flex: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+                <sc-for list="{{ r.blocks }}" as="b" hint-placeholder-count="5">
+                  <span style="height: 34px; box-sizing: border-box; border: 2px {{ r.lineStyle }} {{ r.fg }}; background: {{ b.fill }}"></span>
+                </sc-for>
+              </span>
+              <span style="flex: 0 0 44px; font-size: 26px; font-weight: 600; letter-spacing: -0.02em">{{ r.score }}</span>
+            </span>
+            <span style="flex: 1 1 200px; font-size: 18px; font-weight: 500">{{ r.saw }}</span>
+            <span aria-hidden="true" style="flex: 0 0 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1.5px solid {{ r.fg }}; border-radius: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px">{{ r.sign }}</span>
+          </button>
+          <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 4px 24px 18px 24px; background: #FBFBF8; border-top: 1px dashed #8A8A84">
+              <sc-for list="{{ r.evidence }}" as="e" hint-placeholder-count="3">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 12px 0; border-bottom: 1px dashed #B5B5AE">
+                  <span style="flex: 0 0 72px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #4A4A45">{{ e.date }}</span>
+                  <span style="flex: 1 1 300px; font-size: 16px; line-height: 1.35">{{ e.text }}</span>
+                  <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.04em; padding: 5px 9px; border: 1.5px solid #111111; border-radius: 4px; white-space: nowrap">{{ e.source }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px">
+      <div style="flex: 999 1 520px; min-width: 0; min-height: 280px; box-sizing: border-box; border: 1.5px solid #111111; border-radius: 8px; padding: 18px 22px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.08em">
+          <span>SIGNAL VELOCITY · LAST 12 MONTHS</span>
+          <span style="color: #4A4A45">1 square = 1 new signal</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; align-items: end; flex-grow: 1">
+          <sc-for list="{{ months }}" as="m" hint-placeholder-count="12">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; justify-content: flex-end; height: 100%">
+              <sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="2">
+                <span style="width: 70%; max-width: 28px; height: 20px; background: {{ c.fill }}; border: 1.5px solid #111111; box-sizing: border-box"></span>
+              </sc-for>
+              <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: #4A4A45; padding-top: 4px; border-top: 1.5px solid #111111; width: 100%; text-align: center">{{ m.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="flex: 1 1 380px; min-width: 0; box-sizing: border-box; border: 1.5px dashed #111111; border-radius: 8px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.08em">
+          <span>PARTNER READ</span>
+          <span style="color: #4A4A45">the tool can't see these</span>
+        </div>
+        <sc-for list="{{ traits }}" as="t" hint-placeholder-count="5">
+          <fieldset style="margin: 0; padding: 0; border: none; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
+            <legend style="float: left; padding: 0; font-size: 15px">{{ t.name }}</legend>
+            <div style="display: flex; gap: 12px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px">
+              <label style="display: flex; align-items: center; gap: 4px"><input type="radio" name="{{ t.key }}" style="accent-color: #111111; margin: 0"> LOW</label>
+              <label style="display: flex; align-items: center; gap: 4px"><input type="radio" name="{{ t.key }}" style="accent-color: #111111; margin: 0"> MID</label>
+              <label style="display: flex; align-items: center; gap: 4px"><input type="radio" name="{{ t.key }}" style="accent-color: #111111; margin: 0"> HIGH</label>
+            </div>
+          </fieldset>
+        </sc-for>
+        <div style="display: flex; gap: 8px; margin-top: auto; padding-top: 8px">
+          <button type="button" style="flex: 1; height: 44px; border: 1.5px solid #111111; border-radius: 22px; background: #111111; color: #F4F4F1; font: inherit; font-weight: 600; font-size: 15px">Meet</button>
+          <button type="button" style="flex: 1; height: 44px; border: 1.5px solid #111111; border-radius: 22px; background: transparent; color: #111111; font: inherit; font-weight: 600; font-size: 15px">Watch</button>
+          <button type="button" style="flex: 1; height: 44px; border: 1.5px solid #111111; border-radius: 22px; background: transparent; color: #111111; font: inherit; font-weight: 600; font-size: 15px">Pass</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"verdict":{"editor":"enum","options":["REACH OUT","KEEP TABS","ON PAUSE"],"default":"REACH OUT"},"score":{"editor":"int","min":0,"max":100,"default":87},"accent":{"editor":"color","options":["#F2E94E","#9FD3F5","#F5B38A"],"default":"#F2E94E"},"$preview":{"width":1440,"height":1560}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { open: { '04': true } };
+  }
+  renderVals() {
+    const open = (this.state && this.state.open) || {};
+    const raw = [
+      { id: '01', stage: '01 RESEARCH', tag: 'IS THE WORK STRONG?', n: 4, saw: 'Citations up 3×', evidence: [
+        { date: 'SEP 26', text: 'Citation rate tripled versus 2025', source: 'SEMANTIC SCHOLAR' },
+        { date: 'JUL 26', text: 'Result replicated by two outside groups', source: 'SEMANTIC SCHOLAR' },
+        { date: 'MAR 26', text: 'New preprint on sulfide electrolytes', source: 'ARXIV' }
+      ] },
+      { id: '02', stage: '02 BUILDER', tag: 'NOT TRACKED YET', n: -1, saw: 'No data in v1', evidence: [
+        { date: '—', text: 'GitHub and Hugging Face signals are on the roadmap', source: 'ROADMAP' }
+      ] },
+      { id: '03', stage: '03 INDUSTRY PULL', tag: 'DOES INDUSTRY CARE?', n: 2, saw: '1 corporate coauthor', evidence: [
+        { date: 'APR 26', text: 'Coauthor from a battery manufacturer', source: 'SEMANTIC SCHOLAR' },
+        { date: 'FEB 26', text: 'Paper acknowledges industry funding', source: 'SEMANTIC SCHOLAR' }
+      ] },
+      { id: '04', stage: '04 SPINOUT INTENT', tag: 'HEAVIEST WEIGHT', n: 5, hot: true, saw: 'Grant + patent + team', evidence: [
+        { date: 'JUN 26', text: 'NSF I-Corps team award, two co-leads named', source: 'NSF AWARDS' },
+        { date: 'AUG 26', text: 'Lead inventor on a university patent', source: 'USPTO PATENTSVIEW' },
+        { date: 'OCT 26', text: 'Same 3 names on 4 papers, 1 patent, 1 grant', source: 'CROSS-SOURCE MATCH' }
+      ] },
+      { id: '05', stage: '05 TRACTION', tag: 'CONFIRM ONLY', n: 0, muted: true, saw: 'No company yet', evidence: [
+        { date: 'OCT 26', text: 'No registered entity found, so you are early', source: 'AKTA' }
+      ] },
+      { id: '06', stage: '06 TRACK RECORD', tag: 'BONUS', n: 3, saw: '3 federal grants', evidence: [
+        { date: '2019–25', text: 'Co-PI on 3 competitive federal grants', source: 'NSF AWARDS' }
+      ] }
+    ];
+    const rows = raw.map((r, i) => {
+      const isOpen = !!open[r.id];
+      const fg = r.hot ? '#F4F4F1' : (r.muted || r.n < 0 ? '#55554F' : '#111111');
+      return {
+        stage: r.stage,
+        tag: r.tag,
+        saw: r.saw,
+        evidence: r.evidence,
+        open: isOpen,
+        expanded: isOpen ? 'true' : 'false',
+        sign: isOpen ? '−' : '+',
+        cls: r.hot ? 'lr-row hot' : 'lr-row',
+        bg: r.hot ? '#111111' : 'transparent',
+        fg,
+        lineStyle: r.n < 0 ? 'dashed' : 'solid',
+        score: r.n < 0 ? '—' : r.n + '/5',
+        divider: i === 0 ? 'none' : '1.5px solid #111111',
+        blocks: [0, 1, 2, 3, 4].map((k) => ({ fill: r.n > k ? fg : 'transparent' })),
+        toggle: () => this.setState({ open: { ...open, [r.id]: !isOpen } })
+      };
+    });
+    const labels = ['N', 'D', 'J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O'];
+    const counts = [0, 1, 0, 1, 0, 1, 2, 1, 3, 2, 4, 3];
+    const months = labels.map((label, i) => ({
+      label,
+      cells: Array.from({ length: counts[i] }, () => ({ fill: i >= 6 ? '#111111' : 'transparent' }))
+    }));
+    const traits = [
+      { name: 'Speed of learning', key: 't1' },
+      { name: 'Customer obsession', key: 't2' },
+      { name: 'Ability to recruit', key: 't3' },
+      { name: 'Communication', key: 't4' },
+      { name: 'Resilience', key: 't5' }
+    ];
+    return {
+      rows,
+      months,
+      traits,
+      score: this.props.score ?? 87,
+      verdict: this.props.verdict ?? 'REACH OUT',
+      accent: this.props.accent ?? '#F2E94E'
+    };
+  }
+}
+</script>
+</body>
+</html>
