@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Labscout · Student spinout watchlist</title>
+<link rel="preload" href="/fonts/inter-tight-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/labscout.css">
+<style>
+  .page { padding-bottom: 0; }
+  .chat { max-width: 860px; margin: 0 auto; }
+  .hero { padding: 32px 0 20px; }
+  .hero .lead { margin-top: 18px; }
+  body.has-thread .hero, body.has-thread .starters { display: none; }
+  .starters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+
+  .thread { display: flex; flex-direction: column; gap: 32px; }
+  body.has-thread .thread { padding: 4px 0 28px; }
+  .msg-u { align-self: flex-end; max-width: 80%; background: var(--ink); color: var(--paper); padding: 11px 16px; border-radius: 14px 14px 4px 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .msg-a { min-width: 0; }
+  .hdr { font: 500 12.5px/1.4 var(--mono); color: var(--ink-2); margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+  .hdr b { color: var(--ink); }
+  .say { margin: 0 0 12px; }
+  .err { border: var(--bw) solid var(--bad); background: var(--bad-wash); color: var(--bad); border-radius: var(--r); padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+
+  .steps { list-style: none; padding: 16px 18px; margin: 0; display: grid; gap: 8px; font: 400 13px/1.3 var(--mono); border: var(--bw) solid var(--ink); border-radius: var(--r); background: var(--sheet); max-width: 520px; }
+  .steps li { display: flex; align-items: center; gap: 10px; color: var(--ink-3); }
+  .steps li.done { color: var(--ink-2); }
+  .steps li.active { color: var(--ink); font-weight: 600; }
+  .steps .ic { width: 16px; height: 16px; display: grid; place-items: center; flex: none; }
+  .steps li.done .ic { color: var(--ok); }
+  .steps li.todo .ic::before { content: ""; width: 8px; height: 8px; border: var(--bw) solid var(--rule-2); }
+  .steps li.active .ic::before { content: ""; width: 10px; height: 10px; background: var(--hi); border: var(--bw) solid var(--ink); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+  .filters .chip svg { width: 12px; height: 12px; }
+  .market { display: flex; gap: 10px; overflow-x: auto; margin: 0 0 18px; padding-bottom: 4px; scroll-snap-type: x mandatory; }
+  .market .lbl { flex: none; align-self: center; }
+  .market a { flex: 0 0 auto; max-width: 300px; scroll-snap-align: start; border: var(--bw) solid var(--ink); border-radius: 4px; padding: 8px 10px; font: 400 12px/1.35 var(--mono); text-decoration: none; background: var(--sheet); display: grid; gap: 3px; }
+  .market a:hover { background: var(--hi); }
+  .market a span { color: var(--ink-3); }
+
+  /* index-card stack */
+  .stack { position: relative; outline: none; }
+  .srow { position: relative; height: 58px; margin-top: -29px; margin-inline: calc(var(--d) * 6px); }
+  .srow:first-child { margin-top: 0; }
+  .srow .edge { position: absolute; inset: 29px 0 -29px 0; border: var(--bw) solid var(--ink); border-bottom: 0; border-radius: 10px 10px 0 0; background: var(--sheet); }
+  .srow .ftab { position: absolute; top: 0; left: calc(var(--x) * (100% - 236px)); width: 236px; z-index: 1; height: 31px; }
+  .srow .ftab .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .open { position: relative; background: var(--sheet); border: var(--bw) solid var(--ink); border-top: 0; border-radius: 0 0 var(--r-lg) var(--r-lg); padding: 22px 32px 28px; display: grid; gap: 20px; z-index: 2; }
+  .open-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+  .open-head .name-xl { margin-right: 4px; }
+  .panel-dark { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 24px; }
+  .panel-dark .score-xl { margin-top: 18px; display: flex; align-items: flex-end; font-size: clamp(88px, 11vw, 148px); }
+  .panel-dark .score-xl small { margin-bottom: 12px; }
+  .mom { display: grid; gap: 10px; align-content: end; }
+  .mom svg { width: 100%; height: 110px; }
+  .mom .cap { font: 400 13px/1.3 var(--mono); color: var(--on-dark); }
+  .mom .btn.hi { width: 100%; margin-top: 18px; }
+  .brief { white-space: pre-line; margin: 0; font-size: 16px; max-width: 68ch; text-wrap: pretty; }
+  .meter { background: transparent; border-top: 0; border-bottom: 0; border-left: 0; text-align: left; cursor: pointer; color: inherit; font: inherit; }
+  .meter:hover { background: var(--paper); }
+  .meter.dark:hover { background: var(--dark-2); }
+  .meter[aria-pressed="true"] .label { background: var(--hi); color: var(--ink); justify-self: start; padding: 0 4px; margin-left: -4px; }
+  .ev { display: grid; gap: 14px; }
+  .evgrp { display: grid; grid-template-columns: 150px 1fr; gap: 6px 14px; font-size: 14px; }
+  .evgrp ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+  .evgrp li { overflow-wrap: anywhere; }
+  .src { font: 500 10.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; border: 1px solid var(--ink); border-radius: 3px; padding: 2px 4px; margin-right: 6px; vertical-align: 1px; }
+  .tag { color: var(--ink-3); font: 400 12px var(--mono); }
+  .ev-empty { color: var(--ink-3); font-size: 14px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding-top: 16px; border-top: 1px solid var(--hair); }
+  .actions .btn { height: 34px; font-size: 11.5px; }
+  .why { font: 400 13px/1.5 var(--mono); }
+  .why summary { cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+  .why ul { margin: 8px 0 0; padding-left: 18px; font-family: var(--sans); font-size: 14px; }
+  .mail { margin-top: 2px; }
+  .mail pre { white-space: pre-wrap; font-size: 13px; }
+
+  .drawer { margin: -44px -24px 0; position: relative; z-index: 0; padding-top: 72px; }
+  .after { margin-top: 14px; display: grid; gap: 10px; font: 400 12.5px/1.5 var(--mono); color: var(--ink-2); }
+  .integ { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+  .integ span { display: inline-flex; align-items: center; gap: 7px; }
+  .next { display: flex; flex-wrap: wrap; gap: 8px; }
+  .empty { border: var(--bw) dashed var(--ink); border-radius: var(--r); padding: 18px; background: var(--sheet); }
+
+  .dock { padding: 0 0 28px; }
+  body.has-thread .dock { position: sticky; bottom: 0; z-index: 10; background: var(--paper); padding: 12px 0 16px; border-top: var(--bw) solid var(--ink); }
+  .composer { display: flex; align-items: flex-end; gap: 10px; padding: 10px 10px 10px 18px; background: var(--sheet); border: var(--bw) solid var(--ink); border-radius: var(--r-lg); box-shadow: var(--lift); }
+  .composer:focus-within { box-shadow: 0 0 0 4px var(--hi); }
+  .composer textarea { flex: 1; border: 0; background: transparent; resize: none; outline: none; font-size: 17px; line-height: 1.5; padding: 8px 0; max-height: 160px; min-height: 76px; }
+  body.has-thread .composer textarea { min-height: 40px; font-size: 16px; }
+  .composer textarea::placeholder { color: var(--ink-3); }
+  .send { width: 44px; height: 44px; padding: 0; flex: none; }
+  .send svg { width: 18px; height: 18px; }
+  .hint { display: flex; justify-content: space-between; gap: 10px; margin: 8px 4px 0; font: 400 11.5px/1.3 var(--mono); color: var(--ink-3); }
+  .hint button { background: none; border: 0; padding: 0; color: var(--ink); font: inherit; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; text-decoration: underline; text-underline-offset: 3px; }
+  .hint button[hidden] { display: none; }
+  body.has-thread .ls-foot { display: none; }
+
+  @media (max-width: 720px) {
+    .open { padding: 18px 16px 22px; }
+    .panel-dark { grid-template-columns: 1fr; padding: 22px 20px; gap: 12px; }
+    .panel-dark .score-xl { font-size: 104px; }
+    .srow .ftab { width: 196px; left: calc(var(--x) * (100% - 196px)); gap: 10px; padding: 0 10px; }
+    .srow { margin-inline: calc(var(--d) * 3px); }
+    .evgrp { grid-template-columns: 1fr; gap: 4px; }
+    .drawer { margin: 0 -16px; }
+    .msg-u { max-width: 92%; }
+    .starters .chip { white-space: normal; height: auto; min-height: 32px; padding: 7px 14px; line-height: 1.3; text-align: left; }
+    .hint .k { display: none; }
+    .market a { max-width: 240px; }
+  }
+  .composer { flex-wrap: wrap; }
+  .composer textarea { order: 2; }
+  .composer .attach { order: 1; width: 100%; display: flex; }
+  .composer .attach[hidden] { display: none; }
+  .composer .clip { order: 3; width: 44px; height: 44px; padding: 0; flex: none; }
+  .composer .send { order: 4; }
+  .composer.drag { box-shadow: 0 0 0 4px var(--hi); background: #FBF8D6; }
+  .file-chip { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; height: 34px; padding: 0 6px 0 10px; border: var(--bw) solid var(--ink); border-radius: 6px; background: var(--hi); font: 500 12.5px/1 var(--mono); }
+  .file-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-chip .meta { color: var(--ink-2); font-weight: 400; }
+  .file-chip button { width: 24px; height: 24px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; border-radius: 4px; }
+  .file-chip button:hover { background: rgba(17,17,17,.1); }
+  .msg-u .file-chip { margin-bottom: 8px; }
+  .thesis-card { border: var(--bw) solid var(--ink); border-radius: var(--r); background: var(--sheet); padding: 16px 18px; display: grid; gap: 10px; margin-bottom: 14px; }
+  .thesis-card h3 { font: 700 20px/1.15 var(--serif); letter-spacing: -.03em; margin: 0; }
+  .thesis-card .q { font: 500 13px/1.4 var(--mono); }
+  .thesis-card .crit { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fit { border: var(--bw) solid var(--ink); border-radius: var(--r); background: var(--sheet); padding: 12px 14px; display: grid; gap: 8px; }
+  .fit ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .fit li { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: start; font-size: 14px; line-height: 1.4; }
+  .fit li b { font-weight: 600; margin-right: 6px; }
+  .fit .v { font: 600 11px/20px var(--mono); text-transform: uppercase; letter-spacing: .08em; text-align: center; border: var(--bw) solid var(--ink); border-radius: 4px; }
+  .fit .v-yes { background: var(--ink); color: var(--sheet); }
+  .fit .v-no { color: var(--ink-3); border-color: var(--ink-3); }
+  .since { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; margin: 0 0 10px; font: 400 13px/1.5 var(--mono); }
+  .since .label { background: var(--hi); padding: 2px 6px; border-radius: 4px; }
+  .replay { font: 400 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); border: var(--bw) solid var(--ink-3); border-radius: 4px; padding: 3px 6px; }
+</style>
+</head>
+<body>
+<div id="ls-top"></div>
+<main class="page">
+  <div class="wrap">
+    <div class="chat">
+      <section class="hero" id="hero">
+        <h1 class="h-display">Find the founder <em>before</em> the company.</h1>
+        <p class="lead">Type a thesis. Get NYC students already publishing on it, ranked.</p>
+      </section>
+
+      <div class="thread" id="thread" aria-live="polite"></div>
+
+      <div class="dock">
+        <form class="composer" id="f">
+          <label class="sr" for="q">Investment thesis or follow-up</label>
+          <div class="attach" id="attach" hidden></div>
+          <textarea id="q" rows="2" autocomplete="off" placeholder="Describe your thesis, or attach it as a PDF…"></textarea>
+          <input type="file" id="file" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown" hidden>
+          <button class="btn ghost clip" id="clip" type="button" aria-label="Attach thesis file (PDF, TXT, MD)" title="Attach thesis (PDF, TXT, MD)"></button>
+          <button class="btn send" id="go" type="submit" aria-label="Send"></button>
+        </form>
+        <div class="hint"><span class="k">Enter to send · Shift+Enter new line</span><button type="button" id="reset" hidden></button></div>
+        <div class="starters" id="starters">
+          <button type="button" class="chip" id="upload-chip">Upload thesis (PDF)</button>
+          <button type="button" class="chip" data-q="students working on protein design with diffusion models">Protein design + diffusion</button>
+          <button type="button" class="chip" data-q="LLM agents for software engineering">LLM coding agents</button>
+          <button type="button" class="chip" data-q="battery materials discovery with machine learning">ML battery materials</button>
+          <button type="button" class="chip" data-q="robot learning for manipulation and dexterous hands">Robot manipulation</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<div id="ls-foot"></div>
+<script src="/assets/shell.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = LS.esc, safeUrl = LS.safeUrl, icon = LS.icon;
+  var form = $("f"), input = $("q"), btn = $("go"), thread = $("thread"), resetBtn = $("reset"), starters = $("starters");
+  btn.innerHTML = icon("send", 18);
+  resetBtn.innerHTML = icon("refresh", 12) + "New thesis";
+
+  var NOW_Y = new Date().getFullYear();
+  var STEPS = ["Reading thesis · Nicrron", "Searching papers + news", "Checking 23 founder-signal sources", "Writing briefs", "Saving to Roundtable"];
+  var SRC = { github: "GitHub", arxiv: "arXiv", semanticscholar: "Semantic Scholar", nsf: "NSF", nih: "NIH", patentsview: "USPTO", sbir: "SBIR", huggingface: "Hugging Face", packages: "PyPI/npm", zenodo: "Zenodo", crossref: "Crossref", orcid: "ORCID", europepmc: "Europe PMC", cordis: "CORDIS", wikidata: "Wikidata", dissertations: "Thesis", nycorp: "NY DOS", edgar: "SEC", usaspending: "USAspending", clinicaltrials: "ClinicalTrials", yc: "YC", bluesky: "Bluesky", hackernews: "HN" };
+  var STAGES = { 1: "Research quality", 2: "Builder", 3: "Commercial pull", 4: "Spinout intent", 5: "Traction", 6: "Track record" };
+  var SCHOOLS = ["All", "Columbia", "NYU", "Cornell", "Cornell Tech"];
+  var WINDOWS = ["2024–26", "2025–26", "2026"];
+  var SORTS = ["Score", "Citations", "Papers"];
+  var STATUS = ["All", "Current"];
+  var BUILD = ["Any", "GitHub"];
+  var XS = [1, .48, .1, .88, .34, .76, .04, .6, .22, .94, .4, .7];
+  var MOCK_PARAM = location.search.indexOf("mock=1") !== -1;
+  var DEMO_PARAM = /[?&]demo=1\b/.test(location.search);
+
+  var replies = [];   // {data, q, st, sel, meter, mail, el, ms}
+  var lastQ = "";
+  var busy = false;
+
+  /* ---------- mock (no network) ---------- */
+  function mk(id, name, inst, cur, score, works, wc, cites, sig, brief, extra) {
+    var c = { authorId: "https://openalex.org/A50000000" + id, name: name, orcid: cur ? "https://orcid.org/0000-0002-1825-00" + id : null, institutions: [inst],
+      works: works.map(function (w, i) { return { id: "https://openalex.org/W" + id + i, title: w[0], year: w[1], venue: w[2], url: "https://openalex.org/W" + id + i, citedBy: w[3] || 0, position: w[4] || "first" }; }),
+      worksCount: wc, citedByCount: cites, firstPubYear: 2021, isCurrentStudent: cur, score: score,
+      education: cur ? [{ institution: inst === "NYU" ? "New York University" : inst + " University", degree: "PhD", startYear: 2022, endYear: null }] : [],
+      signals: sig, brief: brief, reasons: [] };
+    for (var k in extra || {}) c[k] = extra[k];
+    return c;
+  }
+  var MOCK = {
+    query: "students working on protein design with diffusion models", keywords: "protein design diffusion models", totalWorks: 87, tookMs: 12400,
+    candidates: [
+      mk("17", "Maya Lindqvist", "Columbia", true, 92,
+        [["Equivariant Diffusion for De Novo Binder Design", 2026, "NeurIPS", 41], ["Scoring Designed Proteins with LM Likelihoods", 2025, "bioRxiv", 12], ["Generative Backbones at Scale", 2024, "ICML", 7, "middle"], ["Motif Scaffolding with Flow Matching", 2026, "ICLR", 5]],
+        11, 214,
+        [{ source: "github", stage: 2, kind: "repo", label: "mlindqvist/binder-diffusion · 1.2k stars", url: "https://github.com/", date: "2026-09-12", weight: 8 },
+         { source: "arxiv", stage: 1, kind: "velocity", label: "3 arXiv preprints in 12 months", url: "https://arxiv.org/", date: null, weight: 4 },
+         { source: "nsf", stage: 4, kind: "icorps", label: "NSF I-Corps team lead (2026)", url: "https://www.nsf.gov/", date: "2026-03-01", weight: 8 },
+         { source: "patentsview", stage: 4, kind: "patent", label: "US patent application: diffusion binder scoring", url: "https://patents.google.com/", date: "2026-05-01", weight: 6 }],
+        "First author on 3 of 4 recent diffusion protein-design papers, incl. a NeurIPS 2026 spotlight.\nColumbia PhD since 2022 (ORCID), still enrolled.\nLeads an NSF I-Corps team; 1.2k-star open-source binder toolkit.",
+        { reasons: ["First author on 3 on-thesis papers", "ORCID: enrolled PhD", "NSF I-Corps + patent filing", "1.2k-star GitHub repo"], recentWorksCount: 3,
+          mentions: [{ title: "Columbia lab spins up binder-design startup", url: "https://akta.pro/", publisher: "akta.pro", publishedDate: "2026-09-20", sentiment: "positive" }] }),
+      mk("15", "Rohan Iyer", "NYU", true, 81,
+        [["Conditional Diffusion over Sequence and Structure", 2026, "ICLR", 19], ["Fast Inverse Folding", 2025, "bioRxiv", 6]], 6, 88,
+        [{ source: "github", stage: 2, kind: "repo", label: "riyer/seqstruct · 640 stars", url: "https://github.com/", date: "2026-08-01", weight: 6 },
+         { source: "sbir", stage: 4, kind: "sbir_award", label: "SBIR Phase I co-PI (2026)", url: "https://www.sbir.gov/", date: "2026-02-01", weight: 10 }],
+        "First author on an ICLR 2026 joint sequence-structure diffusion paper.\nNYU PhD candidate, enrolled per ORCID.\nCo-PI on a 2026 SBIR Phase I award.", { reasons: ["ICLR first author", "SBIR co-PI"], recentWorksCount: 2 }),
+      mk("14", "Dana Feld", "Cornell Tech", true, 70,
+        [["Diffusion Priors for Enzyme Active Sites", 2025, "NeurIPS", 22], ["Protein Docking with Score Models", 2024, "ICML", 14]], 5, 120,
+        [{ source: "semanticscholar", stage: 1, kind: "citation_velocity", label: "Citation velocity top 5% in field", url: "https://www.semanticscholar.org/", date: null, weight: 5 }],
+        "First author on an enzyme-design diffusion paper (NeurIPS 2025).\nCornell Tech PhD, enrolled.\nCitations growing fast: 120 since 2023.", { reasons: ["High citation velocity", "On-thesis first author"], recentWorksCount: 1 }),
+      mk("11", "Kenji Tanaka", "Columbia", null, 61,
+        [["Benchmarking Generative Protein Models", 2025, "bioRxiv", 8, "middle"]], 4, 38,
+        [{ source: "github", stage: 2, kind: "repo", label: "ktanaka/protbench · 210 stars", url: "https://github.com/", date: "2026-06-01", weight: 4 }],
+        "Co-author on a protein-generation benchmark (2025).\nFirst publication in 2023, consistent with a student.\nNo ORCID, so enrollment is unverified.", { reasons: ["Benchmark co-author", "Active GitHub"] }),
+      mk("09", "Sofia Moreno", "NYU", true, 55,
+        [["Latent Diffusion for Antibody CDR Loops", 2024, "MLSB", 5]], 3, 21,
+        [{ source: "arxiv", stage: 1, kind: "preprint", label: "arXiv preprint: CDR loop diffusion", url: "https://arxiv.org/", date: "2026-04-01", weight: 3 }],
+        "First author on antibody CDR-loop diffusion (MLSB 2024).\nNYU master's student, enrolled per ORCID.\nEarly profile: 3 papers, 21 citations.", { reasons: ["Antibody focus", "Enrolled"] }),
+      mk("06", "James Hartley", "Cornell", false, 47,
+        [["Physics-Informed Protein Diffusion", 2024, "ICML", 30, "last"]], 9, 310, [],
+        "Senior author on a physics-informed diffusion paper (ICML 2024).\nGraduated 2025 per ORCID; now a postdoc.\nStrong record: 310 citations.", { reasons: ["Senior author", "Not currently enrolled"] }),
+      mk("03", "Ada Okafor", "Columbia", null, 36,
+        [["Diffusion Sampling Tricks for Proteins", 2025, "workshop", 2]], 2, 4, [],
+        "First author on a 2025 workshop paper on diffusion sampling.\nFirst publication in 2025.\nEnrollment unverified.", { reasons: ["Early-stage researcher"] })
+    ],
+    market: [
+      { title: "Generative protein design startups raised $1.1B in 2026", url: "https://akta.pro/", publisher: "akta.pro", publishedDate: "2026-10-02", sentiment: "positive" },
+      { title: "Big pharma signs three AI-binder licensing deals", url: "https://akta.pro/", publisher: "akta.pro", publishedDate: "2026-09-18", sentiment: "positive" },
+      { title: "FDA clears first de novo designed protein for trials", url: "https://akta.pro/", publisher: "akta.pro", publishedDate: "2026-08-30", sentiment: "neutral" }
+    ],
+    roundtable: { path: "labscout/protein-design-diffusion-models.md", version: 3 },
+    integrations: { nicrron: true, prism: true, akta: true, roundtable: true }
+  };
+  MOCK.criteria = ["First-author on-thesis research", "Open-source builder", "Commercial or spinout intent"];
+  MOCK.changes = { prevAt: "2026-10-24T14:10:00Z", added: ["Dana Feld"], dropped: ["Lee Park"], kept: 6 };
+  MOCK.candidates[0].fit = [
+    { criterion: MOCK.criteria[0], verdict: "yes", evidence: "First author on 3 of 4 diffusion protein papers, incl. NeurIPS 2026." },
+    { criterion: MOCK.criteria[1], verdict: "yes", evidence: "mlindqvist/binder-diffusion has 1.2k GitHub stars." },
+    { criterion: MOCK.criteria[2], verdict: "yes", evidence: "NSF I-Corps team lead and a US patent application." }];
+  MOCK.candidates[1].fit = [
+    { criterion: MOCK.criteria[0], verdict: "yes", evidence: "First author, ICLR 2026 sequence-structure diffusion." },
+    { criterion: MOCK.criteria[1], verdict: "partial", evidence: "riyer/seqstruct, 640 stars; single maintainer." },
+    { criterion: MOCK.criteria[2], verdict: "yes", evidence: "Co-PI on a 2026 SBIR Phase I award." }];
+
+  /* ---------- helpers ---------- */
+  function link(u, text) {
+    var s = safeUrl(u);
+    return s ? '<a href="' + esc(s) + '" target="_blank" rel="noopener">' + esc(text) + "</a>" : esc(text);
+  }
+  function pad(n) { return ("00" + n).slice(-3); }
+  function short(name) { var p = String(name || "").trim().split(/\s+/); return p.length > 1 ? p[0].charAt(0) + ". " + p[p.length - 1] : p[0] || "?"; }
+  function first(name) { return String(name || "").trim().split(/\s+/)[0] || "there"; }
+  function sumW(sig) { return sig.reduce(function (a, s) { return a + (+s.weight || 1); }, 0); }
+  function instMatch(c, school) {
+    var k = school.toLowerCase();
+    return (c.institutions || []).some(function (n) {
+      var l = n.toLowerCase();
+      if (k === "cornell") return l.indexOf("cornell") !== -1 && l.indexOf("tech") === -1;
+      if (k === "nyu") return l.indexOf("nyu") !== -1 || l.indexOf("new york university") !== -1;
+      return l.indexOf(k) !== -1;
+    });
+  }
+  function defaults() { return { school: "All", status: "All", build: "Any", win: WINDOWS[0], sort: "Score", top: 0 }; }
+  function apply(r) {
+    var st = r.st, list = (r.data.candidates || []).slice();
+    if (st.school !== "All") list = list.filter(function (c) { return instMatch(c, st.school); });
+    if (st.status === "Current") list = list.filter(function (c) { return c.isCurrentStudent === true; });
+    if (st.build === "GitHub") list = list.filter(function (c) { return (c.signals || []).some(function (s) { return s.source === "github"; }); });
+    if (st.win !== WINDOWS[0]) {
+      var y0 = +st.win.slice(0, 4);
+      list = list.filter(function (c) { return (c.works || []).some(function (w) { return +w.year >= y0; }); });
+    }
+    var key = st.sort === "Citations" ? "citedByCount" : st.sort === "Papers" ? "worksCount" : "score";
+    list.sort(function (a, b) { return (+b[key] || 0) - (+a[key] || 0); });
+    if (st.top) list = list.slice(0, st.top);
+    return list;
+  }
+  function maxScore(r) { return Math.max.apply(null, (r.data.candidates || []).map(function (c) { return +c.score || 0; }).concat([1])); }
+  function norm(r, c) { return Math.round((+c.score || 0) / maxScore(r) * 100); }
+
+  /* ---------- meters + momentum ---------- */
+  function meterData(c) {
+    var sig = c.signals || [];
+    var by = function (f) { return sig.filter(f); };
+    var s1 = by(function (s) { return +s.stage === 1 || +s.stage === 6; }), s2 = by(function (s) { return +s.stage === 2 || s.source === "github"; });
+    var s3 = by(function (s) { return +s.stage === 3; }), s4 = by(function (s) { return +s.stage === 4 || +s.stage === 5; });
+    var m = c.mentions || [];
+    return [
+      { label: "01 Research", pts: sumW(s1) + (c.works || []).length * 3, items: s1, works: c.works || [] },
+      { label: "02 Builder", pts: sumW(s2), items: s2 },
+      { label: "03 Industry pull", pts: sumW(s3) + m.length * 3, items: s3, news: m },
+      { label: "04 Spinout intent · ×weight", pts: sumW(s4), items: s4, dark: true }
+    ];
+  }
+  function sqs(pts) { var n = Math.min(5, Math.round(pts / 3)), h = ""; for (var i = 0; i < 5; i++) h += '<i class="sq' + (i < n ? " on" : "") + '"></i>'; return h; }
+  function momentum(c) {
+    var ys = (c.works || []).map(function (w) { return +w.year; }).filter(Boolean);
+    var y0 = Math.min.apply(null, ys.concat([NOW_Y - 3])), y1 = NOW_Y, pts = [], acc = 0;
+    for (var y = y0; y <= y1; y++) { acc += ys.filter(function (v) { return v === y; }).length; pts.push(acc); }
+    var max = Math.max(1, acc), n = pts.length;
+    var poly = pts.map(function (v, i) { return (n === 1 ? 0 : i / (n - 1) * 300).toFixed(1) + "," + (100 - v / max * 88 - 6).toFixed(1); }).join(" ");
+    var recent = c.recentWorksCount != null ? +c.recentWorksCount : ys.filter(function (v) { return v >= NOW_Y - 1; }).length;
+    var cap = "+" + recent + " paper" + (recent === 1 ? "" : "s") + (c.recentWorksCount != null ? " in 12 months" : " since " + (NOW_Y - 1)) + " · " + (c.worksCount == null ? acc : c.worksCount) + " total";
+    return '<svg viewBox="0 0 300 100" preserveAspectRatio="none" role="img" aria-label="Cumulative on-thesis papers ' + y0 + " to " + y1 + '"><polyline points="' + poly + '" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg><div class="cap">' + esc(cap) + "</div>";
+  }
+
+  /* ---------- evidence ---------- */
+  function sigLi(s) { return '<li><span class="src">' + esc(SRC[s.source] || s.source) + "</span>" + link(s.url, s.label) + (s.date ? ' <span class="tag">' + esc(String(s.date).slice(0, 10)) + "</span>" : "") + "</li>"; }
+  function workLi(w) {
+    var tags = [(w.position ? w.position + " author" : ""), w.year, w.venue, w.citedBy != null ? w.citedBy + " cites" : ""].filter(function (x) { return x != null && x !== ""; }).join(" · ");
+    return "<li>" + link(w.url, w.title) + ' <span class="tag">' + esc(tags) + "</span></li>";
+  }
+  function newsLi(n) { return "<li>" + link(n.url, n.title) + ' <span class="tag">' + esc([n.publisher, n.publishedDate ? String(n.publishedDate).slice(0, 10) : "", n.sentiment].filter(Boolean).join(" · ")) + "</span></li>"; }
+  function grp(label, lis) { return lis.length ? '<div class="evgrp"><span class="label">' + esc(label) + "</span><ul>" + lis.join("") + "</ul></div>" : ""; }
+  function evidence(c, meter) {
+    var out = "";
+    if (meter != null) {
+      var m = meterData(c)[meter];
+      out = grp("Papers", (m.works || []).slice(0, 5).map(workLi)) + grp("Signals", m.items.map(sigLi)) + grp("Press · akta.pro", (m.news || []).map(newsLi));
+      return out || '<p class="ev-empty">No ' + esc(m.label.slice(3).replace(/ ·.*/, "").toLowerCase()) + " evidence found yet.</p>";
+    }
+    out += grp("Papers", (c.works || []).slice(0, 3).map(workLi));
+    var sig = c.signals || [];
+    for (var st = 1; st <= 6; st++) out += grp(st + " " + STAGES[st], sig.filter(function (s) { return +s.stage === st; }).map(sigLi));
+    out += grp("Press · akta.pro", (c.mentions || []).map(newsLi));
+    return out || '<p class="ev-empty">No linked evidence.</p>';
+  }
+
+  /* ---------- email / copy ---------- */
+  function emailText(c, q) {
+    var w = (c.works || [])[0];
+    var urls = (c.works || []).map(function (x) { return safeUrl(x.url); }).filter(Boolean).slice(0, 3);
+    if (safeUrl(c.orcid)) urls.push(c.orcid);
+    return "Subject: Your work on " + (q || "your research") + "\n\nHi " + first(c.name) + ",\n\n" +
+      (w ? "I read \u201c" + w.title + "\u201d" + (w.venue ? " (" + w.venue + (w.year ? " " + w.year : "") + ")" : "") + " and wanted to reach out.\n\n" : "I came across your research and wanted to reach out.\n\n") +
+      "What stood out:\n" + String(c.brief || "").split("\n").filter(Boolean).map(function (l) { return "- " + l; }).join("\n") +
+      "\n\nI back early teams coming out of NYC labs. Open to a 20-minute call next week?\n\nSources: " + urls.join(" ");
+  }
+  function copyText(c) {
+    var urls = (c.works || []).map(function (w) { return w.url; }).filter(Boolean);
+    return c.name + " (" + (c.institutions || []).join(", ") + ") \u2014 " + (c.brief || "") + "\nSources: " + urls.join(" ");
+  }
+  function copy(text, b, label) {
+    var lab = b.querySelector("span") || b;
+    var done = function () { lab.textContent = "Copied"; setTimeout(function () { lab.textContent = label; }, 1500); };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    else { fallbackCopy(text); done(); }
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- the drawer reply ---------- */
+  function chip(act, label, val, on) {
+    return '<button type="button" class="chip' + (on ? " on" : "") + '" data-act="' + act + '" aria-pressed="' + (on ? "true" : "false") + '">' + esc(label) + ": " + esc(val) + "</button>";
+  }
+  function filtersRow(r) {
+    var st = r.st;
+    var h = chip("school", "School", st.school, st.school !== "All") + chip("status", "Students", st.status, st.status !== "All") +
+      chip("build", "Builders", st.build, st.build !== "Any") + chip("win", "Window", st.win, st.win !== WINDOWS[0]) + chip("sort", "Sort", st.sort, st.sort !== "Score");
+    if (st.top) h += '<button type="button" class="chip on" data-act="top" aria-label="Remove top ' + st.top + ' limit">Top ' + st.top + " · clear</button>";
+    return '<div class="filters" role="group" aria-label="Filters">' + h + "</div>";
+  }
+  function marketStrip(d) {
+    var m = (d.market || []).slice(0, 3);
+    if (!m.length) return "";
+    return '<div class="market"><span class="label lbl">Market pull</span>' + m.map(function (n) {
+      var u = safeUrl(n.url);
+      return (u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' : '<a>') + esc(n.title) + "<span>" + esc([n.publisher, n.publishedDate ? String(n.publishedDate).slice(0, 10) : ""].filter(Boolean).join(" · ")) + "</span></a>";
+    }).join("") + "</div>";
+  }
+  function fitBlock(c) {
+    var f = c.fit || [];
+    if (!f.length) return "";
+    var yes = f.filter(function (x) { return x.verdict === "yes"; }).length;
+    return '<div class="fit"><span class="label">Fit vs your thesis · ' + yes + "/" + f.length + "</span><ul>" + f.map(function (x) {
+      return '<li><span class="v v-' + esc(x.verdict) + '">' + esc(x.verdict === "partial" ? "part" : x.verdict) + "</span><span><b>" + esc(x.criterion) + "</b>" + esc(x.evidence) + "</span></li>";
+    }).join("") + "</ul></div>";
+  }
+  function hhmm(iso) { var t = iso ? new Date(iso) : null; return t && !isNaN(t) ? t.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""; }
+  function replayTag(d) {
+    if (!d.replay) return "";
+    return '<span class="replay">' + (d.replay.fallback ? "live search failed · " : "") + "snapshot " + esc(hhmm(d.replay.savedAt)) + "</span>";
+  }
+  function changesLine(d) {
+    var ch = d.changes;
+    if (!ch) return "";
+    var when = ch.prevAt ? new Date(ch.prevAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "last run";
+    var body = !ch.added.length && !ch.dropped.length ? "No change · " + ch.kept + " kept"
+      : (ch.added.length ? "<b>+" + ch.added.length + " new</b> " + esc(ch.added.map(short).join(", ")) : "") +
+        (ch.dropped.length ? (ch.added.length ? " · " : "") + "−" + ch.dropped.length + " dropped" : "") + " · " + ch.kept + " kept";
+    return '<p class="since"><span class="label">Since ' + esc(when) + "</span><span>" + body + "</span></p>";
+  }
+  function exportMemo(r) {
+    var w = window.open("", "_blank"); // open synchronously inside the click so popup blockers allow it
+    if (!w) return;
+    w.document.title = "Labscout memo";
+    import("/assets/memo.js").then(function (m) {
+      w.document.open(); w.document.write(m.memoHtml(r.data, r.list || apply(r), r.data.criteria || [])); w.document.close();
+    }).catch(function () { w.close(); });
+  }
+  function openCard(r, c, rank) {
+    var md = meterData(c);
+    var pills = (c.institutions || []).map(function (n) { return '<span class="pill">' + esc(n) + "</span>"; }).join("");
+    if (c.isCurrentStudent === true) pills += '<span class="pill ok">' + icon("check", 12) + "Current student</span>";
+    else if (c.isCurrentStudent === false) pills += '<span class="pill">Not enrolled</span>';
+    else pills += '<span class="pill">Enrollment unverified</span>';
+    var why = (c.reasons || []).length ? "<ul>" + c.reasons.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" : "<ul><li>Authorship, recency, enrollment and stage signals.</li></ul>";
+    return '<div class="open" id="open-' + r.id + '" role="tabpanel" aria-labelledby="tab-' + r.id + "-" + rank + '">' +
+      '<div class="open-head"><h2 class="name-xl">' + esc(c.name) + "</h2>" + pills + "</div>" +
+      '<div class="panel-dark"><div><span class="label">Spinout score</span><div class="score-xl" title="Raw Labscout score ' + esc(c.score) + ', normalized to the top student in this result">' + norm(r, c) + "<small>/100</small></div></div>" +
+        '<div class="mom">' + momentum(c) + '<button type="button" class="btn hi" data-act="reach">Reach out</button></div></div>' +
+      (r.mail === rank ? '<div class="mail"><pre>' + esc(emailText(c, r.data.keywords || r.q)) + '<button type="button" class="copy-btn" data-act="copymail"><span>Copy email</span></button></pre></div>' : "") +
+      (c.brief ? '<p class="brief">' + esc(c.brief) + "</p>" : "") +
+      fitBlock(c) +
+      '<div class="meters">' + md.map(function (m, i) {
+        return '<button type="button" class="meter' + (m.dark ? " dark" : "") + '" data-act="meter" data-k="' + i + '" aria-pressed="' + (r.meter === i) + '" title="' + esc(m.pts) + ' signal points · show evidence"><span class="label">' + esc(m.label) + '</span><span class="sqs">' + sqs(m.pts) + "</span></button>";
+      }).join("") + "</div>" +
+      '<div class="ev">' + evidence(c, r.meter) + "</div>" +
+      '<div class="actions"><details class="why"><summary>Why this rank · raw score <b>' + esc(c.score) + "</b></summary>" + why + "</details>" +
+        '<span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">' +
+        (safeUrl(c.authorId) ? '<a class="btn ghost" href="' + esc(c.authorId) + '" target="_blank" rel="noopener">OpenAlex' + icon("ext", 14) + "</a>" : "") +
+        (safeUrl(c.orcid) ? '<a class="btn ghost" href="' + esc(c.orcid) + '" target="_blank" rel="noopener">ORCID' + icon("ext", 14) + "</a>" : "") +
+        '<button type="button" class="btn ghost" data-act="copybrief">' + icon("copy", 14) + "<span>Copy brief</span></button></span></div>" +
+    "</div>";
+  }
+  function renderDrawer(r) {
+    var d = r.data, list = apply(r);
+    r.list = list;
+    if (r.sel >= list.length) r.sel = 0;
+    var total = (d.candidates || []).length;
+    var hdr = '<p class="hdr"><span><b>' + esc(d.totalWorks == null ? 0 : d.totalWorks) + "</b> papers → <b>" + total + "</b> students" + (r.ms ? " · " + (r.ms / 1000).toFixed(1) + " s" : "") + "</span>" +
+      (list.length !== total ? "<span>showing " + list.length + "</span>" : "") + "<span>“" + esc(d.keywords || r.q) + "”</span>" + replayTag(d) + "</p>";
+    var html = hdr + changesLine(d) + filtersRow(r) + marketStrip(d);
+    if (!list.length) {
+      html += '<div class="empty">No students match these filters. Clear a filter above or try a broader thesis.</div>';
+    } else {
+      // back of the stack = lowest rank; front (bottom) = rank 1
+      var rows = "", n = list.length;
+      for (var k = n - 1; k >= 0; k--) {
+        var c = list[k], depth = k, sel = k === r.sel;
+        rows += '<div class="srow" style="--d:' + depth + ";--x:" + XS[depth % XS.length] + '"><span class="edge"></span>' +
+          '<button type="button" class="ftab settle" style="--i:' + (n - 1 - k) + '" role="tab" id="tab-' + r.id + "-" + k + '" data-k="' + k + '" aria-selected="' + sel + '" aria-controls="open-' + r.id + '" tabindex="' + (sel ? 0 : -1) + '" title="Rank ' + (k + 1) + ": " + esc(c.name) + ", raw score " + esc(c.score) + '">' +
+          '<span class="id">' + pad(k + 1) + '</span><span class="nm">' + esc(short(c.name)) + "</span><b>" + norm(r, c) + "</b></button></div>";
+      }
+      html += '<div class="stack" role="tablist" aria-label="Ranked students">' + rows + "</div>" + openCard(r, list[r.sel], r.sel);
+    }
+    html += '<div class="drawer"><span class="tag-hi">student watchlist · ' + esc(d.keywords || r.q) + '</span><span class="handle" aria-hidden="true"></span></div>';
+    var after = [];
+    if (d.roundtable) after.push("<div>Saved to Roundtable · <code>" + esc(d.roundtable.path) + "</code>" + (d.roundtable.version ? " · v" + esc(d.roundtable.version) : "") + "</div>");
+    var ig = d.integrations || {};
+    after.push('<div class="integ">' + [["Nicrron", ig.nicrron], ["PRISM", ig.prism], ["akta.pro", ig.akta], ["Roundtable", ig.roundtable]].map(function (x) {
+      return '<span><i class="dot' + (x[1] ? " ok" : "") + '"></i>' + x[0] + (x[1] ? "" : " off") + "</span>";
+    }).join("") + "</div>");
+    after.push('<div><button type="button" class="btn ghost" data-act="memo">' + icon("paper", 14) + "<span>Export partner memo</span></button></div>");
+    var sugg = ["Only current students", "Only Columbia", "Top 3", "With GitHub", "More like #1", "Email #1"];
+    after.push('<div class="next">' + sugg.map(function (s) { return '<button type="button" class="chip" data-say="' + esc(s) + '">' + esc(s) + "</button>"; }).join("") + "</div>");
+    html += '<div class="after">' + after.join("") + "</div>";
+    r.el.innerHTML = html;
+  }
+
+  /* ---------- thread ---------- */
+  function addUser(text) { var el = document.createElement("div"); el.className = "msg-u settle"; el.textContent = text; thread.appendChild(el); return el; }
+  function addAssistant() { var el = document.createElement("div"); el.className = "msg-a"; thread.appendChild(el); return el; }
+  function scrollToEl(el) {
+    var y = el.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top: y, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }
+  function progress(el) {
+    var i = 0;
+    function draw() {
+      el.innerHTML = '<p class="hdr">Scouting · usually 20–40 s</p><ol class="steps">' + STEPS.map(function (s, j) {
+        var st = j < i ? "done" : j === i ? "active" : "todo";
+        return '<li class="' + st + '"><span class="ic">' + (st === "done" ? icon("check", 14) : "") + "</span>" + esc(s) + "</li>";
+      }).join("") + "</ol>";
+    }
+    draw();
+    var t = setInterval(function () { if (i < STEPS.length - 1) { i++; draw(); } }, 3000);
+    return function () { clearInterval(t); i = STEPS.length; draw(); };
+  }
+  /* ---------- demo snapshots (public/demo/demo.json, written by scripts/snapshot.ts) ---------- */
+  var snapP = null;
+  function snapshots() {
+    if (!snapP) snapP = Promise.all([
+      import("/assets/snap.js"),
+      fetch("/demo/demo.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+    ]).then(function (x) { return { key: x[0].snapKey, data: x[1] }; }).catch(function () { return { key: null, data: null }; });
+    return snapP;
+  }
+  function fromSnapshot(kind, k, fallback) {
+    return snapshots().then(function (s) {
+      var d = s.data, id = kind === "search" ? (s.key ? s.key(k[0], k[1]) : null) : k;
+      var hit = d && id != null && d[kind] && d[kind][id];
+      if (!hit) return null;
+      var out = JSON.parse(JSON.stringify(hit));
+      if (kind === "search") out.replay = { savedAt: d.savedAt || null, fallback: !!fallback };
+      return out;
+    });
+  }
+  function wait(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
+  function postJson(url, body, ms) {
+    var ctl = new AbortController(), timer = setTimeout(function () { ctl.abort(); }, ms);
+    return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: ctl.signal })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (j) {
+          if (!res.ok) throw new Error(j.error || ("Request failed (HTTP " + res.status + ")"));
+          return j;
+        });
+      }, function (e) { throw new Error(e && e.name === "AbortError" ? "Timed out after " + Math.round(ms / 1000) + " s." : "Network error."); })
+      .finally(function () { clearTimeout(timer); });
+  }
+  /** ?demo=1 replays a snapshot when one exists; otherwise go live and fall back to a snapshot on failure. */
+  function withSnapshot(kind, k, live) {
+    if (DEMO_PARAM) return fromSnapshot(kind, k, false).then(function (hit) { return hit ? wait(kind === "search" ? 2500 : 900).then(function () { return hit; }) : live(); });
+    return live().catch(function (err) { return fromSnapshot(kind, k, true).then(function (hit) { if (hit) return hit; throw err; }); });
+  }
+  function fetchSearch(q, criteria) {
+    if (MOCK_PARAM) return new Promise(function (res) { setTimeout(function () { res(JSON.parse(JSON.stringify(MOCK))); }, 1600); });
+    return withSnapshot("search", [q, criteria], function () { return postJson("/api/search", { q: q, criteria: criteria }, 58000); });
+  }
+  var rid = 0;
+  function search(q, el, criteria) {
+    el = el || addAssistant();
+    criteria = criteria || [];
+    el.crit = criteria;
+    var stop = progress(el), t0 = performance.now();
+    setBusy(true);
+    return fetchSearch(q, criteria).then(function (data) {
+      stop();
+      lastQ = q;
+      var r = { id: ++rid, data: data, q: q, criteria: criteria, st: defaults(), sel: 0, meter: null, mail: null, el: el, ms: data.tookMs || (performance.now() - t0) };
+      replies.push(r);
+      el.setAttribute("data-r", replies.length - 1);
+      renderDrawer(r);
+    }).catch(function (err) {
+      stop();
+      el.innerHTML = '<div class="err" role="alert"><span>' + esc(err && err.message ? err.message : "Search failed.") + ' Check the connection and retry.</span><button type="button" class="btn ghost" data-retry="' + esc(q) + '">' + icon("refresh", 14) + "Retry</button></div>";
+    }).then(function () { setBusy(false); placeholder(); });
+  }
+  function latest() { return replies[replies.length - 1]; }
+  function parseFollow(text) {
+    var t = text.toLowerCase(), st = null, prev = latest();
+    if (!prev) return null;
+    var m;
+    if ((m = t.match(/\b(?:email|brief for|reach out to|intro)\s*#?\s*(\d+)/))) return { kind: "email", n: +m[1] };
+    if ((m = t.match(/\bmore like\s*#?\s*(\d+)/))) return { kind: "more", n: +m[1] };
+    var next = JSON.parse(JSON.stringify(prev.st)), hit = false;
+    var inst = /\bcornell tech\b/.test(t) ? "Cornell Tech" : /\bcornell\b/.test(t) ? "Cornell" : /\b(nyu|new york university)\b/.test(t) ? "NYU" : /\bcolumbia\b/.test(t) ? "Columbia" : null;
+    if (inst && /\b(only|just|at|from|in)\b/.test(t)) { next.school = inst; hit = true; }
+    if (/\b(all schools|any school)\b/.test(t)) { next.school = "All"; hit = true; }
+    if (/\b(current|enrolled|only students|still in school)\b/.test(t)) { next.status = "Current"; hit = true; }
+    if (/\bgithub\b|\bbuilders?\b/.test(t)) { next.build = "GitHub"; hit = true; }
+    if ((m = t.match(/\btop\s*(\d+)\b/))) { next.top = Math.max(1, +m[1]); hit = true; }
+    if (/cit(ed|ation)/.test(t)) { next.sort = "Citations"; hit = true; }
+    else if (/\b(most papers|prolific|by papers)\b/.test(t)) { next.sort = "Papers"; hit = true; }
+    else if (/\bby score\b/.test(t)) { next.sort = "Score"; hit = true; }
+    if (/\b2026\b|this year/.test(t)) { next.win = "2026"; hit = true; }
+    else if (/\b2025\b|last (12|twelve) months/.test(t)) { next.win = "2025–26"; hit = true; }
+    return hit ? { kind: "filter", st: next } : null;
+  }
+  /* ---------- thesis upload ---------- */
+  var fileInput = document.getElementById("file"), attachEl = document.getElementById("attach"), clipBtn = document.getElementById("clip");
+  clipBtn.innerHTML = icon("clip", 18);
+  var pending = null; // { name, size, text|null, err|null, ready: Promise }
+  var pdfjsP = null;
+  function loadPdfjs() {
+    if (!pdfjsP) pdfjsP = import("/vendor/pdfjs/pdf.min.mjs").then(function (m) { m.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.min.mjs"; return m; });
+    return pdfjsP;
+  }
+  function extractText(file) {
+    if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
+      return Promise.all([loadPdfjs(), file.arrayBuffer()]).then(function (x) {
+        return x[0].getDocument({ data: new Uint8Array(x[1]) }).promise;
+      }).then(function (doc) {
+        var pages = [], n = Math.min(doc.numPages, 30);
+        var chain = Promise.resolve();
+        for (var i = 1; i <= n; i++) (function (i) {
+          chain = chain.then(function () { return doc.getPage(i); }).then(function (pg) { return pg.getTextContent(); })
+            .then(function (tc) { pages.push(tc.items.map(function (it) { return it.str + (it.hasEOL ? "\n" : " "); }).join("")); });
+        })(i);
+        return chain.then(function () { return pages.join("\n\n"); });
+      });
+    }
+    return file.text();
+  }
+  function kb(n) { return n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB"; }
+  function fileChip(f, removable) {
+    var state = f.err ? " · " + f.err : f.text == null ? " · reading…" : " · " + f.text.split(/\s+/).filter(Boolean).length + " words";
+    return '<span class="file-chip">' + icon("paper", 14) + "<span>" + esc(f.name) + '</span><span class="meta">' + esc(kb(f.size) + state) + "</span>" +
+      (removable ? '<button type="button" data-act="unattach" aria-label="Remove attachment">' + icon("x", 14) + "</button>" : "") + "</span>";
+  }
+  function renderAttach() {
+    attachEl.hidden = !pending;
+    attachEl.innerHTML = pending ? fileChip(pending, true) : "";
+  }
+  function attach(file) {
+    if (!file) return;
+    if (file.size > 15 * 1048576) { pending = { name: file.name, size: file.size, text: null, err: "too large (max 15 MB)" }; renderAttach(); return; }
+    var f = pending = { name: file.name, size: file.size, text: null, err: null };
+    f.ready = extractText(file).then(function (t) { f.text = String(t || ""); if (f.text.trim().length < 80) f.err = "no readable text (scanned?)"; })
+      .catch(function () { f.err = "could not read file"; }).then(function () { if (pending === f) renderAttach(); return f; });
+    renderAttach();
+    input.focus();
+  }
+  clipBtn.addEventListener("click", function () { fileInput.click(); });
+  document.getElementById("upload-chip").addEventListener("click", function () { fileInput.click(); });
+  fileInput.addEventListener("change", function () { attach(fileInput.files[0]); fileInput.value = ""; });
+  attachEl.addEventListener("click", function (e) { if (e.target.closest('[data-act="unattach"]')) { pending = null; renderAttach(); } });
+  ["dragenter", "dragover"].forEach(function (ev) { document.addEventListener(ev, function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, "Files") >= 0) { e.preventDefault(); form.classList.add("drag"); } }); });
+  ["dragleave", "drop"].forEach(function (ev) { document.addEventListener(ev, function (e) { if (ev === "dragleave" && e.relatedTarget) return; form.classList.remove("drag"); }); });
+  document.addEventListener("drop", function (e) { if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) { e.preventDefault(); attach(e.dataTransfer.files[0]); } });
+
+  var MOCK_THESIS = { title: "AI-native climate and weather intelligence", query: "students building AI weather and climate emulation models", keywords: "weather emulation climate machine learning", criteria: ["Proprietary data or sensing", "Deep physical-science expertise", "Recurring vertical revenue"] };
+  function readThesis(f, note) {
+    if (MOCK_PARAM) return new Promise(function (res) { setTimeout(function () { res(MOCK_THESIS); }, 900); });
+    return withSnapshot("thesis", f.name, function () {
+      return postJson("/api/thesis", { text: (note ? "Investor note: " + note + "\n\n" : "") + f.text, filename: f.name }, 30000);
+    });
+  }
+  function sendFile(f, note) {
+    pending = null; renderAttach();
+    document.body.classList.add("has-thread"); input.rows = 1; resetBtn.hidden = false; input.value = ""; grow();
+    var u = document.createElement("div"); u.className = "msg-u settle";
+    u.innerHTML = fileChip(f, false) + (note ? "<div>" + esc(note) + "</div>" : "");
+    thread.appendChild(u); scrollToEl(u);
+    var el = addAssistant();
+    el.innerHTML = '<p class="hdr">Reading ' + esc(f.name) + ' · Nicrron</p><ol class="steps"><li class="active"><span class="ic"></span>Extracting the thesis…</li></ol>';
+    setBusy(true);
+    (f.ready || Promise.resolve(f)).then(function () {
+      if (f.err) throw new Error(f.name + ": " + f.err + ".");
+      return readThesis(f, note);
+    }).then(function (t) {
+      var card = '<div class="thesis-card settle"><span class="label">Thesis read from ' + esc(f.name) + "</span><h3>" + esc(t.title) + '</h3><div class="q">Searching: ' + esc(t.query) + "</div>" +
+        (t.criteria && t.criteria.length ? '<div class="crit">' + t.criteria.map(function (c) { return '<span class="pill">' + esc(c) + "</span>"; }).join("") + "</div>" : "") + "</div>";
+      el.innerHTML = card;
+      var res = addAssistant();
+      setBusy(false);
+      return search(t.query, res, t.criteria || []);
+    }).catch(function (err) {
+      setBusy(false);
+      el.innerHTML = '<div class="err" role="alert"><span>' + esc(err && err.message ? err.message : "Could not read the file.") + " Try a text-based PDF, or paste the thesis.</span></div>";
+    });
+  }
+
+  function send(text) {
+    if (pending && !busy) { sendFile(pending, String(text || "").trim()); return; }
+    text = String(text || "").trim();
+    if (!text || busy) return;
+    document.body.classList.add("has-thread");
+    input.rows = 1;
+    resetBtn.hidden = false;
+    input.value = ""; grow();
+    var u = addUser(text);
+    var f = parseFollow(text), prev = latest();
+    if (f && f.kind === "filter") {
+      var el = addAssistant();
+      var r = { id: ++rid, data: prev.data, q: prev.q, criteria: prev.criteria || [], st: f.st, sel: 0, meter: null, mail: null, el: el, ms: 0 };
+      replies.push(r); el.setAttribute("data-r", replies.length - 1);
+      renderDrawer(r);
+    } else if (f && (f.kind === "email" || f.kind === "more")) {
+      var list = prev.list || apply(prev), c = list[f.n - 1];
+      if (!c) {
+        addAssistant().innerHTML = '<div class="empty">No student #' + f.n + " in the last reply. It lists " + list.length + ".</div>";
+      } else if (f.kind === "email") {
+        addAssistant().innerHTML = '<p class="hdr">Intro email · <b>' + esc(c.name) + '</b></p><div class="mail"><pre data-mail="1">' + esc(emailText(c, prev.data.keywords || prev.q)) + '<button type="button" class="copy-btn" data-act="copyplain"><span>Copy email</span></button></pre></div>';
+      } else {
+        var titles = (c.works || []).slice(0, 3).map(function (w) { return w.title; }).join("; ");
+        search(prev.q + "; similar to: " + titles, null, prev.criteria || []);
+      }
+    } else {
+      search(text);
+    }
+    scrollToEl(u);
+  }
+  function setBusy(b) { busy = b; btn.disabled = b; }
+  function grow() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 160) + "px"; }
+  function placeholder() { input.placeholder = replies.length ? "Refine: only NYU, current students, top 3, email #1…" : "Describe your thesis…"; }
+
+  /* ---------- events ---------- */
+  function cycle(arr, v) { return arr[(arr.indexOf(v) + 1) % arr.length]; }
+  thread.addEventListener("click", function (e) {
+    var t = e.target.closest("button");
+    if (!t) return;
+    var retry = t.getAttribute("data-retry");
+    if (retry != null) { var host0 = t.closest(".msg-a"); if (!busy) search(retry, host0, host0.crit || []); return; }
+    var say = t.getAttribute("data-say");
+    if (say) { send(say); return; }
+    var act = t.getAttribute("data-act");
+    if (act === "copyplain") { copy(t.parentNode.textContent.replace(/Copy email$|Copied$/, ""), t, "Copy email"); return; }
+    var host = t.closest(".msg-a[data-r]");
+    var r = host && replies[+host.getAttribute("data-r")];
+    if (!r) return;
+    var c = r.list && r.list[r.sel];
+    if (t.classList.contains("ftab")) { selectTab(r, +t.getAttribute("data-k"), true); return; }
+    if (act === "school") r.st.school = cycle(SCHOOLS, r.st.school);
+    else if (act === "status") r.st.status = cycle(STATUS, r.st.status);
+    else if (act === "build") r.st.build = cycle(BUILD, r.st.build);
+    else if (act === "win") r.st.win = cycle(WINDOWS, r.st.win);
+    else if (act === "sort") r.st.sort = cycle(SORTS, r.st.sort);
+    else if (act === "top") r.st.top = 0;
+    else if (act === "meter") { var k = +t.getAttribute("data-k"); r.meter = r.meter === k ? null : k; }
+    else if (act === "reach") r.mail = r.mail === r.sel ? null : r.sel;
+    else if (act === "copybrief") { if (c) copy(copyText(c), t, "Copy brief"); return; }
+    else if (act === "copymail") { if (c) copy(emailText(c, r.data.keywords || r.q), t, "Copy email"); return; }
+    else if (act === "memo") { exportMemo(r); return; }
+    else return;
+    if (/school|status|build|win|sort|top/.test(act)) { r.sel = 0; r.meter = null; r.mail = null; }
+    var focusAct = act, focusK = t.getAttribute("data-k");
+    renderDrawer(r);
+    var again = r.el.querySelector('[data-act="' + focusAct + '"]' + (focusK != null ? '[data-k="' + focusK + '"]' : ""));
+    if (again) again.focus();
+  });
+  function selectTab(r, k, focus) {
+    if (!r.list || !r.list.length) return;
+    k = (k + r.list.length) % r.list.length;
+    if (k !== r.sel) { r.sel = k; r.meter = null; r.mail = null; }
+    renderDrawer(r);
+    if (focus) { var b = r.el.querySelector("#tab-" + r.id + "-" + k); if (b) b.focus(); }
+  }
+  thread.addEventListener("keydown", function (e) {
+    var t = e.target;
+    if (!t.classList || !t.classList.contains("ftab")) return;
+    var r = replies[+t.closest(".msg-a").getAttribute("data-r")], k = +t.getAttribute("data-k");
+    // visual order: top of stack = last rank, so Up/Left moves toward the back (higher index)
+    var map = { ArrowUp: 1, ArrowLeft: 1, ArrowDown: -1, ArrowRight: -1 };
+    if (e.key in map) { e.preventDefault(); selectTab(r, k + map[e.key], true); }
+    else if (e.key === "Home") { e.preventDefault(); selectTab(r, 0, true); }
+    else if (e.key === "End") { e.preventDefault(); selectTab(r, r.list.length - 1, true); }
+  });
+  starters.addEventListener("click", function (e) { var c = e.target.closest(".chip"); if (c) send(c.getAttribute("data-q")); });
+  form.addEventListener("submit", function (e) { e.preventDefault(); send(input.value); });
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(input.value); }
+  });
+  input.addEventListener("input", grow);
+  resetBtn.addEventListener("click", function () {
+    if (busy) return;
+    replies = []; lastQ = ""; thread.innerHTML = "";
+    document.body.classList.remove("has-thread"); resetBtn.hidden = true; input.rows = 2;
+    placeholder(); window.scrollTo(0, 0); input.focus();
+  });
+
+  if (MOCK_PARAM) send(MOCK.query);
+})();
+</script>
+</body>
+</html>

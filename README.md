@@ -1,55 +1,51 @@
-# labscout
+# Labscout
 
-An empty shell where the frontend, backend, and database are already connected. There is no domain
-model yet — just enough code to prove every wire works, so feature work can start immediately.
+**PitchBook for students.** Describe your investment thesis in plain English; get a ranked list of current Columbia, NYU, Cornell and Cornell Tech students already publishing on it — each with a 3-line "why this student" brief and source links.
+
+Live: https://labscout-nyc.vercel.app
+
+Built at **Deal Flow — NYC's first VC hackathon** (Betaworks, October 24, 2026), Track 1: Sourcing.
+
+## How it works
+
+- **Thesis → keywords:** Claude (via Nicrron) turns the plain-English thesis into search keywords.
+- **Search:** OpenAlex works search, filtered to Columbia / NYU / Cornell / Cornell Tech, publication years 2024–26.
+- **Enrich:** per-author aggregation of matching papers + OpenAlex author stats + ORCID education check (an education entry with no end date = current student).
+- **Rank & brief:** deterministic score, then a 3-line brief per student with links to every source paper.
+- **Thesis fit:** upload your fund's thesis (PDF/TXT/MD). Labscout pulls up to 4 criteria from it and checks every student against each: yes / partial / no, with the evidence line. Fit points show in the score breakdown.
+- **Since last run:** every shortlist is versioned in Roundtable; re-running a thesis shows who is new and who dropped.
+- **Partner memo:** one click turns the current shortlist into a printable one-page memo with source links.
+
+## Data sources
+
+- [OpenAlex](https://api.openalex.org) — works and author metadata
+- [ORCID public API](https://pub.orcid.org) — education / enrollment status
+- [Nicrron](https://api.nicrron.ai) — Claude access for keyword extraction and briefs
+- 23 founder-signal sources (GitHub, arXiv, Semantic Scholar, NSF, NIH, Hugging Face, PyPI/npm, Zenodo, Crossref, ORCID, Europe PMC, CORDIS, Wikidata, dissertation repositories, NY corporations, SEC Form D, USAspending, ClinicalTrials.gov, Y Combinator, Bluesky, Hacker News, …) — see [docs/SOURCES.md](docs/SOURCES.md)
+
+## Run locally
+
+1. Create `.env.local` with `NICRRON_API_KEY` and `OPENALEX_MAILTO`.
+2. `node scripts/dev.ts` → http://localhost:3000
+3. Tests: `node --test tests/`
+4. Hackathon tab data: `node scripts/hackathon.ts` re-pulls the attendee sheet, runs every attendee through the signal sources (resumable cache in `.cache/`) and writes `public/data/hackathon.json`. Flags: `--fresh`, `--briefs N`, `--openalex`, `--limit N`.
+
+Offline demo of the UI: open `/index.html?mock=1` (uses a built-in sample response, no API calls).
+
+Demo mode: `/?demo=1` replays real production responses recorded by `node scripts/snapshot.ts`. A failed live search falls back to the snapshot, labeled "snapshot HH:MM".
 
 ## Stack
 
-| Layer      | Choice                                                                    |
-| ---------- | ------------------------------------------------------------------------- |
-| Frontend   | Next.js 16 App Router, React 19, TypeScript, plain CSS Modules            |
-| Backend    | Route handlers under `src/app/api/*`                                      |
-| Database   | Lakebase Postgres on Neon, via Drizzle ORM over `node-postgres`           |
-| LLM        | Anthropic SDK (`claude-sonnet-4-6`)                                       |
-| Deploy     | Vercel                                                                    |
+Zero dependencies. Node 26 native TypeScript. Vercel serverless function (`api/search.ts`) + static `public/`.
 
-The Neon project is linked through the gitignored `.neon` file, and `neon.ts` declares which Neon
-services each branch should have.
+## All Signal
 
-## Getting started
+The research cabinet UI is separate from this watchlist. It lives at `/signal` and does not replace `public/index.html`. `npm run dev` serves the watchlist at `/` and All Signal at `/signal`. `npm run dev:sources` is the original Node server for the watchlist API.
 
-```bash
-npm install
-neon env pull      # writes DATABASE_URL, DATABASE_URL_UNPOOLED, NEON_BRANCH into .env.local
-npm run dev
-```
+## Team 9 — Labscout
 
-`.env.local` also needs `ANTHROPIC_API_KEY`, which Neon does not manage.
+- Jak Akdemir — Protocogni Labs
+- Yi Liu — Columbia Business School
+- Mirah Xu — GreenerIntelligence
 
-Open the home page and use its two buttons: one writes a row to Postgres and reads it back, the
-other sends a prompt to Claude. Both go through route handlers, so a green result means the whole
-path is connected.
-
-## Database
-
-`DATABASE_URL` is the pooled (PgBouncer) connection used for application queries.
-`DATABASE_URL_UNPOOLED` is the direct connection, which is what `drizzle.config.ts` uses because
-migrations cannot run through the pooler.
-
-```bash
-npm run db:generate   # write a migration from src/db/schema.ts
-npm run db:migrate    # apply migrations to the linked branch
-```
-
-Create a Neon branch whenever you would create a git branch, so schema changes are isolated:
-
-```bash
-neon checkout dev-my-feature --create
-```
-
-## What to delete when real work starts
-
-The `pings` table (`src/db/schema.ts`), `src/app/api/pings/route.ts`, and
-`src/app/components/WiringCheck.tsx` exist only as proof of life. `src/app/api/health/route.ts` is
-worth keeping. Everything in `src/db/index.ts`, `src/lib/env.ts`, and `src/lib/anthropic.ts` is real
-plumbing meant to stay.
+All code written on build day, October 24, 2026.
