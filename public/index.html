@@ -56,6 +56,12 @@
   .mentions { margin: 6px 0; font-size: 13px; }
   .saved code { background: #f3f3f3; padding: 1px 4px; border-radius: 3px; }
   .integ { margin-top: 16px; letter-spacing: .02em; }
+  .signals { margin: 6px 0; font-size: 13px; }
+  .sigrow { display:flex; gap: 8px; margin: 2px 0; }
+  .sigstage { flex: none; width: 128px; color: var(--muted); font-size: 12px; padding-top: 1px; }
+  .sigrow ul { list-style: none; padding: 0; margin: 0; }
+  .sigrow li { margin: 1px 0; }
+  .sigsrc { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; margin-right: 4px; }
 </style>
 </head>
 <body>
@@ -110,6 +116,11 @@
         worksCount: 9, citedByCount: 214, firstPubYear: 2021,
         education: [{ institution: "Columbia University", degree: "PhD Computer Science", startYear: 2022, endYear: null }],
         isCurrentStudent: true, score: 92,
+        signals: [
+          { source: "github", stage: 2, kind: "profile", label: "GitHub @mayachen — PhD student, Columbia CS", url: "https://github.com/", date: null, weight: 2 },
+          { source: "github", stage: 2, kind: "repo", label: "mayachen/binder-diffusion — 1.2k★, 140 forks, Python", url: "https://github.com/", date: "2026-09-12", weight: 8 },
+          { source: "nsf", stage: 4, kind: "icorps", label: "NSF I-Corps team lead (2026)", url: null, date: "2026-03-01", weight: 6 }
+        ],
         brief: "First author on 2 of 3 recent diffusion-based protein design papers, including a NeurIPS 2025 spotlight.\nPhD student at Columbia (since 2022, per ORCID) — still enrolled.\n214 citations since 2021; corresponding author on her binder-design work."
       },
       {
@@ -119,7 +130,7 @@
           { id: "https://openalex.org/W4", title: "Conditional Diffusion over Protein Sequence and Structure", year: 2025, doi: null, url: "https://openalex.org/W4", venue: "ICLR", citedBy: 9, position: "last", isCorresponding: false }
         ],
         worksCount: 4, citedByCount: 38, firstPubYear: 2023,
-        education: [], isCurrentStudent: null, score: 61,
+        education: [], isCurrentStudent: null, score: 61, signals: [],
         brief: "Senior author on an ICLR 2025 paper on joint sequence–structure diffusion.\nFirst publication in 2023 — early-career profile consistent with a student.\nNo ORCID record, so enrollment could not be verified."
       }
     ]
@@ -172,11 +183,28 @@
         '<div class="head"><span class="name">' + esc(c.name) + '</span><span class="inst">' + esc((c.institutions || []).join(" · ")) + "</span>" + badge(c) + "</div>" +
         (c.brief ? '<div class="brief">' + esc(c.brief) + "</div>" : "") +
         (works.length ? '<ul class="works">' + works.map(workItem).join("") + "</ul>" : "") +
+        signalsBlock(c) +
         mentionsBlock(c) +
         '<div class="foot"><span class="meta">' + foot.join(" · ") + '</span><button type="button" class="copy" data-i="' + i + '">Copy brief</button></div>' +
       "</div></div>";
   }
 
+  var STAGES = { 1: "Research quality", 2: "Builder", 3: "Commercial pull", 4: "Spinout intent", 5: "Traction", 6: "Track record" };
+  function signalItem(s) {
+    var u = safeUrl(s.url);
+    var t = u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(s.label) + "</a>" : esc(s.label);
+    return '<li><span class="sigsrc">' + esc(s.source) + "</span>" + t + "</li>";
+  }
+  function signalsBlock(c) {
+    var sig = c.signals || [];
+    if (!sig.length) return "";
+    var rows = [];
+    for (var st = 1; st <= 6; st++) {
+      var g = sig.filter(function (s) { return +s.stage === st; });
+      if (g.length) rows.push('<div class="sigrow"><span class="sigstage">' + st + " " + esc(STAGES[st]) + "</span><ul>" + g.map(signalItem).join("") + "</ul></div>");
+    }
+    return '<div class="signals">' + rows.join("") + "</div>";
+  }
   function newsItem(n) {
     var u = safeUrl(n.url);
     var t = u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(n.title) + "</a>" : esc(n.title);

@@ -6,9 +6,29 @@ import { parseQuery, writeBrief, sessionFor } from "./llm.ts";
 import { marketSignals, personMentions, aktaEnabled } from "./akta.ts";
 import { saveShortlist, roundtableEnabled } from "./roundtable.ts";
 import { trace, prismEnabled } from "./prism.ts";
-import type { SearchResponse } from "./types.ts";
+import { SOURCES } from "./sources/index.ts";
+import type { Signal, SourceContext, SourceModule } from "./sources/types.ts";
+import type { Candidate, SearchResponse } from "./types.ts";
 
 const cache = new Map<string, SearchResponse>();
+
+const SOURCE_TIMEOUT_MS = 15000;
+
+/** Runs every enabled source on every candidate in parallel. One source can never break or stall the search. */
+export async function collectSignals(cands: Candidate[], ctx: SourceContext, sources: SourceModule[] = SOURCES): Promise<void> {
+  const active = sources.filter((s) => { try { return s.enabled(); } catch { return false; } });
+  await Promise.all(cands.flatMap((c) => {
+    c.signals ??= [];
+    return active.map(async (s) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const timeout = new Promise<Signal[]>((resolve) => { timer = setTimeout(() => resolve([]), SOURCE_TIMEOUT_MS); });
+        const out = await Promise.race([s.enrich(c, ctx), timeout]);
+        if (Array.isArray(out)) c.signals.push(...out.filter((x) => x && typeof x.label === "string"));
+      } catch { /* source failures are non-fatal */ } finally { clearTimeout(timer); }
+    });
+  }));
+}
 
 export async function runSearch(q: string): Promise<SearchResponse> {
   const hit = cache.get(q);
@@ -27,6 +47,10 @@ export async function runSearch(q: string): Promise<SearchResponse> {
     Object.assign(c, author, { education, isCurrentStudent: isCurrentStudent(education) });
     c.score = score(c);
   }));
+  top.sort((a, b) => b.score - a.score);
+  // Founder signals (GitHub, arXiv, NSF, ...): every enabled source on each of the top 10, all in parallel.
+  await collectSignals(top.slice(0, 10), { query: q, keywords });
+  top.forEach((c) => (c.score = score(c)));
   top.sort((a, b) => b.score - a.score);
   const final = top.slice(0, 10);
   await Promise.all([

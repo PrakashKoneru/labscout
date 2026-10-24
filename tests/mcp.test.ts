@@ -6,7 +6,7 @@ const fake = async (q: string): Promise<any> => ({
   query: q, keywords: "kw", totalWorks: 1, market: [], roundtable: { path: "labscout/x.md", version: "v1", bank: null },
   integrations: { nicrron: true, prism: true, akta: true, roundtable: true },
   candidates: [{ authorId: "https://openalex.org/A1", name: "Ada", orcid: null, institutions: ["Columbia"], works: [], worksCount: 1, citedByCount: 0,
-    firstPubYear: 2025, recentWorksCount: 1, reasons: [], mentions: [], education: [], isCurrentStudent: true, score: 10, brief: "b" }],
+    firstPubYear: 2025, recentWorksCount: 1, reasons: [], mentions: [], education: [], isCurrentStudent: true, score: 10, brief: "b", signals: [] }],
 });
 
 test("initialize advertises tools capability", async () => {

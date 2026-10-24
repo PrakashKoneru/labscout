@@ -21,7 +21,7 @@ export function aggregate(works: any[]): Candidate[] {
       const existing = byAuthor.get(id) ?? {
         authorId: id, name: a.author.display_name ?? "Unknown", orcid: a.author.orcid ?? null,
         institutions: [], works: [], worksCount: null, citedByCount: null, firstPubYear: null, recentWorksCount: null, reasons: [], mentions: [],
-        education: [], isCurrentStudent: null, score: 0, brief: null,
+        education: [], isCurrentStudent: null, score: 0, brief: null, signals: [],
       };
       for (const n of nyc) if (!existing.institutions.includes(n)) existing.institutions.push(n);
       existing.works.push({ ...work, position: a.author_position, isCorresponding: !!a.is_corresponding });

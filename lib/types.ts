@@ -1,3 +1,5 @@
+import type { Signal } from "./sources/types.ts";
+
 export type Work = {
   id: string;
   title: string;
@@ -33,6 +35,7 @@ export type Candidate = {
   isCurrentStudent: boolean | null;
   score: number;
   brief: string | null;
+  signals: Signal[];               // founder signals from lib/sources/* (GitHub, arXiv, NSF, ...)
 };
 
 export type NewsSignal = {

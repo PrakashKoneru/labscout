@@ -1,4 +1,5 @@
 import type { Candidate, Education } from "./types.ts";
+import type { Signal } from "./sources/types.ts";
 
 export function isCurrentStudent(edu: Education[]): boolean | null {
   if (edu.length === 0) return null;
@@ -36,8 +37,34 @@ export function score(c: Candidate): number {
   if (c.worksCount !== null && c.worksCount > 30) { const p = Math.min(20, (c.worksCount - 30) / 5); s -= p; reasons.push(`established author (${c.worksCount} papers) −${r1(p)}`); }
   if (c.firstPubYear !== null && c.firstPubYear < 2018) { s -= 10; reasons.push(`publishing since ${c.firstPubYear} −10`); }
 
+  // Founder signals (lib/sources/*): sum weights per source, capped at SOURCE_CAP each.
+  const bySource = new Map<string, Signal[]>();
+  for (const sig of c.signals ?? []) {
+    const list = bySource.get(sig.source) ?? [];
+    list.push(sig);
+    bySource.set(sig.source, list);
+  }
+  for (const [src, list] of bySource) {
+    const raw = list.reduce((a, x) => a + (Number.isFinite(x.weight) ? Math.max(0, x.weight) : 0), 0);
+    const pts = r1(Math.min(SOURCE_CAP, raw));
+    if (pts <= 0) continue;
+    s += pts;
+    reasons.push(`${src}: ${describe(list)} +${pts}`);
+  }
+
   c.reasons = reasons;
   return Math.round(s * 10) / 10;
+}
+
+export const SOURCE_CAP = 15;
+
+function describe(list: Signal[]): string {
+  const kinds = new Map<string, number>();
+  for (const x of list) kinds.set(x.kind, (kinds.get(x.kind) ?? 0) + 1);
+  const parts = [...kinds].map(([k, n]) => `${n} ${k}${n === 1 ? "" : "s"}`);
+  const stars = list.reduce((a, x) => a + (Number(/(\d+(?:\.\d+)?k?)★/.exec(x.label)?.[1]?.replace("k", "e3")) || 0), 0);
+  if (stars > 0) parts.push(`${stars >= 1000 ? r1(stars / 1000) + "k" : stars} stars`);
+  return parts.join(", ");
 }
 
 const r1 = (n: number) => Math.round(n * 10) / 10;

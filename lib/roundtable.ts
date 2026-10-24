@@ -32,6 +32,12 @@ export function renderShortlist(query: string, keywords: string, candidates: Can
     if (c.brief) lines.push("", c.brief);
     lines.push("", "Evidence:");
     for (const w of c.works.slice(0, 3)) lines.push(`- [${w.position} author, ${w.year}${w.venue ? ", " + w.venue : ""}] ${w.title}${w.url ? ` — ${w.url}` : ""}`);
+    const sigs = c.signals ?? [];
+    if (sigs.length) {
+      lines.push("", "Signals:");
+      for (const s of sigs) lines.push(`- [stage ${s.stage} ${s.source}] ${s.label}${s.url ? ` — ${s.url}` : ""}`);
+      lines.push("");
+    }
     for (const r of c.reasons) lines.push(`- score: ${r}`);
     lines.push(`- OpenAlex: ${c.authorId}${c.orcid ? `\n- ORCID: ${c.orcid}` : ""}`, "");
   });

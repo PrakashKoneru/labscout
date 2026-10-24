@@ -6,7 +6,7 @@ import type { Candidate } from "../lib/types.ts";
 const base = (o: Partial<Candidate> = {}): Candidate => ({
   authorId: "A1", name: "X", orcid: null, institutions: ["Columbia"],
   works: [{ id: "W1", title: "t", year: 2025, doi: null, url: null, venue: null, citedBy: 0, position: "first", isCorresponding: false }],
-  worksCount: 3, citedByCount: 5, firstPubYear: 2024, recentWorksCount: null, reasons: [], education: [], isCurrentStudent: null, score: 0, brief: null, ...o,
+  worksCount: 3, citedByCount: 5, firstPubYear: 2024, recentWorksCount: null, reasons: [], education: [], isCurrentStudent: null, score: 0, brief: null, signals: [], ...o,
 });
 
 test("isCurrentStudent true when an education entry has no end year", () => {
