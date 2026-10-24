@@ -355,7 +355,7 @@
         msg.textContent = cands.length + " students ranked in " + secs + " s. Updating live counts…";
         return light([
           ["kw", ig.nicrron === false ? "off" : esc(d.keywords || "–")],
-          ["market", ig.akta === false ? "off" : esc(market.length) + " articles" + (first ? "<br>" + first : "")],
+          ["market", ig.akta === false ? "off" : esc(market.length) + (market.length === 1 ? " article" : " articles") + (first ? "<br>" + first : "")],
           ["briefs", esc(briefs) + " briefs written"],
           ["press", ig.akta === false ? "off" : esc(mentions) + " press mentions"],
           ["save", rt ? esc(rt.path) + (rt.version ? "<br>v " + esc(String(rt.version).slice(0, 12)) : "") : "not saved"],
