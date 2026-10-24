@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Labscout — PitchBook for students</title>
+<style>
+  :root { --fg:#111; --muted:#6b6b6b; --line:#e5e5e5; --bg:#fff; --soft:#f5f5f5; --green:#0a7d38; --greenbg:#e7f6ec; --red:#b42318; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 800px; padding: 40px 24px 80px; }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.02em; }
+  .tagline { color: var(--muted); margin: 0 0 24px; }
+  form { display:flex; gap:8px; }
+  input[type=text] { flex:1; font: inherit; padding: 10px 12px; border:1px solid #ccc; border-radius:6px; }
+  input[type=text]:focus { outline: 2px solid var(--fg); outline-offset: -1px; }
+  button { font: inherit; cursor:pointer; border-radius:6px; }
+  .primary { background:var(--fg); color:#fff; border:1px solid var(--fg); padding: 10px 16px; font-weight:600; }
+  .primary:disabled { opacity: .5; cursor: default; }
+  .chips { margin: 10px 0 0; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .chips span { color: var(--muted); font-size: 13px; }
+  .chip { background:var(--soft); border:1px solid var(--line); padding: 3px 10px; font-size: 13px; border-radius: 999px; }
+  .chip:hover { border-color:#bbb; }
+  #status { margin: 28px 0 12px; color: var(--muted); font-size: 14px; }
+  #status.error { color: var(--red); }
+  .steps { list-style:none; padding:0; margin:0; }
+  .steps li { padding: 2px 0; color: #aaa; }
+  .steps li.active { color: var(--fg); font-weight: 600; }
+  .steps li.done { color: var(--muted); }
+  .steps li.done::before { content: "✓ "; }
+  .steps li.active::before { content: "→ "; }
+  .steps li.todo::before { content: "· "; }
+  .card { display:flex; gap:16px; padding: 18px 0; border-top: 1px solid var(--line); }
+  .rank { font-size: 20px; font-weight: 700; color: #bbb; width: 28px; flex: none; text-align:right; }
+  .body { flex:1; min-width:0; }
+  .head { display:flex; flex-wrap:wrap; align-items:baseline; gap: 6px 10px; }
+  .name { font-weight: 700; font-size: 17px; }
+  .inst { color: var(--muted); }
+  .badge { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); border:1px solid var(--line); }
+  .badge.current { background: var(--greenbg); color: var(--green); border-color: #bfe5cc; font-weight: 600; }
+  .degree { font-size: 13px; color: var(--muted); }
+  .brief { white-space: pre-line; margin: 8px 0; }
+  .works { margin: 6px 0; padding-left: 18px; font-size: 14px; }
+  .works li { margin: 2px 0; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .works .meta { font-size: 13px; }
+  a { color: var(--fg); }
+  .foot { display:flex; justify-content:space-between; align-items:center; gap: 10px; margin-top: 6px; }
+  .copy { background: #fff; border: 1px solid var(--line); font-size: 12px; padding: 2px 10px; color: var(--fg); }
+  .copy:hover { border-color: #999; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Labscout</h1>
+  <p class="tagline">PitchBook for students. Describe your thesis; get the NYC students already publishing on it.</p>
+
+  <form id="f">
+    <input id="q" type="text" autocomplete="off" aria-label="Investment thesis" value="students working on protein design with diffusion models">
+    <button class="primary" id="go" type="submit">Find students</button>
+  </form>
+  <div class="chips" id="chips">
+    <span>Try:</span>
+    <button type="button" class="chip">students working on protein design with diffusion models</button>
+    <button type="button" class="chip">LLM agents for software engineering</button>
+    <button type="button" class="chip">battery materials discovery with machine learning</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="results"></div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $("f"), input = $("q"), btn = $("go"), statusEl = $("status"), results = $("results");
+  var STEPS = ["Reading your thesis", "Searching OpenAlex", "Checking ORCID", "Writing briefs"];
+  var stepTimer = null;
+  var current = [];
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function safeUrl(u) { return /^https?:\/\//i.test(u || "") ? u : null; }
+
+  var MOCK = {
+    query: "students working on protein design with diffusion models",
+    keywords: "protein design diffusion models",
+    totalWorks: 87,
+    candidates: [
+      {
+        authorId: "https://openalex.org/A5000000001", name: "Maya Chen",
+        orcid: "https://orcid.org/0000-0002-1825-0097", institutions: ["Columbia"],
+        works: [
+          { id: "https://openalex.org/W1", title: "Equivariant Diffusion for De Novo Binder Design", year: 2025, doi: "10.0000/mock.1", url: "https://doi.org/10.0000/mock.1", venue: "NeurIPS", citedBy: 41, position: "first", isCorresponding: true },
+          { id: "https://openalex.org/W2", title: "Scoring Designed Proteins with Language Model Likelihoods", year: 2024, doi: null, url: "https://arxiv.org/abs/2401.00001", venue: "bioRxiv", citedBy: 12, position: "first", isCorresponding: false },
+          { id: "https://openalex.org/W3", title: "A Benchmark for Generative Protein Backbones", year: 2024, doi: null, url: null, venue: "ICML", citedBy: 7, position: "middle", isCorresponding: false }
+        ],
+        worksCount: 9, citedByCount: 214, firstPubYear: 2021,
+        education: [{ institution: "Columbia University", degree: "PhD Computer Science", startYear: 2022, endYear: null }],
+        isCurrentStudent: true, score: 92,
+        brief: "First author on 2 of 3 recent diffusion-based protein design papers, including a NeurIPS 2025 spotlight.\nPhD student at Columbia (since 2022, per ORCID) — still enrolled.\n214 citations since 2021; corresponding author on her binder-design work."
+      },
+      {
+        authorId: "https://openalex.org/A5000000002", name: "Arjun Patel",
+        orcid: null, institutions: ["NYU"],
+        works: [
+          { id: "https://openalex.org/W4", title: "Conditional Diffusion over Protein Sequence and Structure", year: 2025, doi: null, url: "https://openalex.org/W4", venue: "ICLR", citedBy: 9, position: "last", isCorresponding: false }
+        ],
+        worksCount: 4, citedByCount: 38, firstPubYear: 2023,
+        education: [], isCurrentStudent: null, score: 61,
+        brief: "Senior author on an ICLR 2025 paper on joint sequence–structure diffusion.\nFirst publication in 2023 — early-career profile consistent with a student.\nNo ORCID record, so enrollment could not be verified."
+      }
+    ]
+  };
+
+  function showLoading() {
+    var i = 0;
+    function render() {
+      statusEl.className = "";
+      statusEl.innerHTML = '<ul class="steps">' + STEPS.map(function (s, j) {
+        return '<li class="' + (j < i ? "done" : j === i ? "active" : "todo") + '">' + esc(s) + (j === i ? "…" : "") + "</li>";
+      }).join("") + "</ul>";
+    }
+    render();
+    stepTimer = setInterval(function () { if (i < STEPS.length - 1) { i++; render(); } }, 5000);
+  }
+  function stopLoading() { clearInterval(stepTimer); stepTimer = null; }
+
+  function showError(msg) {
+    statusEl.className = "error";
+    statusEl.textContent = msg;
+    results.innerHTML = "";
+  }
+
+  function badge(c) {
+    if (c.isCurrentStudent === true) {
+      var ed = (c.education || []).filter(function (e) { return e.endYear == null; })[0];
+      var d = ed ? [ed.degree, ed.institution].filter(Boolean).join(", ") : "";
+      return '<span class="badge current">Current student</span>' + (d ? '<span class="degree">' + esc(d) + "</span>" : "");
+    }
+    if (c.isCurrentStudent === false) return '<span class="badge">Not a current student</span>';
+    return '<span class="badge">Student status unverified</span>';
+  }
+
+  function workItem(w) {
+    var tags = ["" + (w.position || "") + " author", w.year, w.venue].filter(function (x) { return x != null && x !== ""; }).join(", ");
+    var u = safeUrl(w.url);
+    var t = u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(w.title) + "</a>" : esc(w.title);
+    return '<li><span class="meta">[' + esc(tags) + "]</span> " + t + "</li>";
+  }
+
+  function card(c, i) {
+    var works = (c.works || []).slice(0, 3);
+    var foot = ["score " + esc(c.score), esc(c.worksCount == null ? "?" : c.worksCount) + " papers", esc(c.citedByCount == null ? "?" : c.citedByCount) + " citations"];
+    if (safeUrl(c.authorId)) foot.push('<a href="' + esc(c.authorId) + '" target="_blank" rel="noopener">OpenAlex</a>');
+    if (safeUrl(c.orcid)) foot.push('<a href="' + esc(c.orcid) + '" target="_blank" rel="noopener">ORCID</a>');
+    return '<div class="card">' +
+      '<div class="rank">' + (i + 1) + "</div>" +
+      '<div class="body">' +
+        '<div class="head"><span class="name">' + esc(c.name) + '</span><span class="inst">' + esc((c.institutions || []).join(" · ")) + "</span>" + badge(c) + "</div>" +
+        (c.brief ? '<div class="brief">' + esc(c.brief) + "</div>" : "") +
+        (works.length ? '<ul class="works">' + works.map(workItem).join("") + "</ul>" : "") +
+        '<div class="foot"><span class="meta">' + foot.join(" · ") + '</span><button type="button" class="copy" data-i="' + i + '">Copy brief</button></div>' +
+      "</div></div>";
+  }
+
+  function render(data) {
+    current = data.candidates || [];
+    statusEl.className = "";
+    statusEl.textContent = "Searched OpenAlex for \u201c" + (data.keywords || "") + "\u201d across Columbia, NYU, Cornell and Cornell Tech (2024\u201326): " +
+      (data.totalWorks == null ? 0 : data.totalWorks) + " papers \u2192 " + current.length + " ranked students.";
+    results.innerHTML = current.map(card).join("");
+  }
+
+  function copyText(c) {
+    var urls = (c.works || []).map(function (w) { return w.url; }).filter(Boolean);
+    return c.name + " (" + (c.institutions || []).join(", ") + ") \u2014 " + (c.brief || "") + "\nSources: " + urls.join(" ");
+  }
+
+  results.addEventListener("click", function (e) {
+    var b = e.target.closest(".copy");
+    if (!b) return;
+    var text = copyText(current[+b.getAttribute("data-i")]);
+    var done = function () { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy brief"; }, 1500); };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
+  });
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+
+  function run() {
+    var q = input.value.trim();
+    if (!q) return;
+    btn.disabled = true;
+    results.innerHTML = "";
+    showLoading();
+    var p = location.search.indexOf("mock=1") !== -1
+      ? new Promise(function (r) { setTimeout(function () { r(MOCK); }, 600); })
+      : fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ q: q }) })
+          .then(function (res) {
+            return res.json().catch(function () { return {}; }).then(function (j) {
+              if (!res.ok) throw new Error(j.error || ("Request failed (HTTP " + res.status + ")"));
+              return j;
+            });
+          });
+    p.then(function (data) { stopLoading(); render(data); })
+     .catch(function (err) { stopLoading(); showError(err && err.message ? err.message : "Something went wrong."); })
+     .then(function () { btn.disabled = false; });
+  }
+
+  form.addEventListener("submit", function (e) { e.preventDefault(); run(); });
+  $("chips").addEventListener("click", function (e) {
+    var c = e.target.closest(".chip");
+    if (!c) return;
+    input.value = c.textContent;
+    run();
+  });
+
+  if (location.search.indexOf("mock=1") !== -1) run();
+})();
+</script>
+</body>
+</html>
