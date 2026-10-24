@@ -59,7 +59,7 @@ export default function FullSignal() {
   };
 
   return (
-    <div className={styles.app}>
+    <div className={`${styles.app} fullSignalRoot`}>
       <a className={styles.skip} href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById("main-content")?.focus(); }}>Skip to content</a>
       <header className={styles.header}>
         <button className={styles.brand} onClick={() => navigate('')} aria-label="All Signal home">

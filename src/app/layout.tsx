@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Full Signal — Find what’s forming",
+  title: "All Signal — Find what’s forming",
   description: "An evidence-led research cabinet for finding emerging founders, teams, and ideas.",
 };
 

@@ -1,143 +1,126 @@
 .page {
-  --background: #fafafa;
-  --foreground: #fff;
-
-  --text-primary: #000;
-  --text-secondary: #666;
-
-  --button-primary-hover: #383838;
-  --button-secondary-hover: #f2f2f2;
-  --button-secondary-border: #ebebeb;
-
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-geist-sans);
-  background-color: var(--background);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.page::before {
+  content: "";
+  position: absolute;
+  top: -300px;
+  left: 50%;
+  width: 900px;
+  height: 640px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, var(--accent-soft), transparent 68%);
+  pointer-events: none;
 }
 
 .main {
+  position: relative;
   display: flex;
-  flex: 1;
   width: 100%;
-  max-width: 800px;
+  max-width: 880px;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 48px;
-  background-color: var(--foreground);
-  padding: 120px 60px;
+  gap: 56px;
+  padding: 96px 28px;
 }
 
 .intro {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: 24px;
+  gap: 20px;
 }
 
-.intro h1 {
-  max-width: 320px;
-  font-size: 40px;
+.wordmark {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 44px;
+  font-weight: 500;
+}
+
+.wordmark::before {
+  content: "◆ ";
+  color: var(--accent);
+}
+
+.tagline {
+  max-width: 540px;
+  color: var(--muted);
+  font-size: 19px;
+  line-height: 1.6;
+}
+
+.doors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.door {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 30px 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  transition: border-color 0.18s, background 0.18s, transform 0.18s;
+}
+
+.doorAlt {
+  --accent: #a89bff;
+  --accent-soft: rgba(168, 155, 255, 0.12);
+  --accent-line: rgba(168, 155, 255, 0.32);
+}
+
+.doorLabel {
+  color: var(--accent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.doorTitle {
+  font-size: 21px;
   font-weight: 600;
-  line-height: 48px;
-  letter-spacing: -2.4px;
-  text-wrap: balance;
-  color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
-.intro p {
-  max-width: 440px;
-  font-size: 18px;
-  line-height: 32px;
-  text-wrap: balance;
-  color: var(--text-secondary);
+.doorBody {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.55;
 }
 
-.intro a {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.ctas {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  max-width: 440px;
-  gap: 16px;
-  font-size: 14px;
-}
-
-.ctas a {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 128px;
-  border: 1px solid transparent;
-  transition: 0.2s;
-  cursor: pointer;
-  width: fit-content;
-  font-weight: 500;
-}
-
-a.primary {
-  background: var(--text-primary);
-  color: var(--background);
-  gap: 8px;
-}
-
-a.secondary {
-  border-color: var(--button-secondary-border);
-}
-
-/* Enable hover only on non-touch devices */
 @media (hover: hover) and (pointer: fine) {
-  a.primary:hover {
-    background: var(--button-primary-hover);
-    border-color: transparent;
-  }
-
-  a.secondary:hover {
-    background: var(--button-secondary-hover);
-    border-color: transparent;
+  .door:hover {
+    border-color: var(--accent-line);
+    background: var(--surface-raised);
+    transform: translateY(-2px);
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .main {
-    padding: 48px 24px;
+    gap: 40px;
+    padding: 64px 20px;
   }
 
-  .intro {
-    gap: 16px;
-  }
-
-  .intro h1 {
+  .wordmark {
     font-size: 32px;
-    line-height: 40px;
-    letter-spacing: -1.92px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .logo {
-    filter: invert();
   }
 
-  .page {
-    --background: #000;
-    --foreground: #000;
+  .tagline {
+    font-size: 17px;
+  }
 
-    --text-primary: #ededed;
-    --text-secondary: #999;
-
-    --button-primary-hover: #ccc;
-    --button-secondary-hover: #1a1a1a;
-    --button-secondary-border: #1a1a1a;
+  .doors {
+    grid-template-columns: 1fr;
   }
 }
