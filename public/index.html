@@ -155,7 +155,7 @@
 
   function card(c, i) {
     var works = (c.works || []).slice(0, 3);
-    var foot = ["score " + esc(c.score), esc(c.worksCount == null ? "?" : c.worksCount) + " papers", esc(c.citedByCount == null ? "?" : c.citedByCount) + " citations"];
+    var foot = ['<span class="why" title="' + esc((c.reasons || []).join("\n")) + '">score ' + esc(c.score) + (c.reasons && c.reasons.length ? " ⓘ" : "") + "</span>", esc(c.worksCount == null ? "?" : c.worksCount) + " papers", esc(c.citedByCount == null ? "?" : c.citedByCount) + " citations"];
     if (safeUrl(c.authorId)) foot.push('<a href="' + esc(c.authorId) + '" target="_blank" rel="noopener">OpenAlex</a>');
     if (safeUrl(c.orcid)) foot.push('<a href="' + esc(c.orcid) + '" target="_blank" rel="noopener">ORCID</a>');
     return '<div class="card">' +

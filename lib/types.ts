@@ -26,6 +26,8 @@ export type Candidate = {
   worksCount: number | null;
   citedByCount: number | null;
   firstPubYear: number | null;
+  recentWorksCount: number | null; // works in the last 2 years (OpenAlex counts_by_year)
+  reasons: string[];               // human-readable score breakdown
   education: Education[];
   isCurrentStudent: boolean | null;
   score: number;

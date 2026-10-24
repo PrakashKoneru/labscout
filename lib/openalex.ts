@@ -10,11 +10,13 @@ export async function searchWorks(keywords: string, perPage = 50): Promise<any[]
   return (await r.json()).results ?? [];
 }
 
-export async function getAuthor(authorId: string): Promise<{ worksCount: number; citedByCount: number; firstPubYear: number | null }> {
+export async function getAuthor(authorId: string): Promise<{ worksCount: number; citedByCount: number; firstPubYear: number | null; recentWorksCount: number | null }> {
   const id = authorId.replace("https://openalex.org/", "");
   const r = await fetch(`${BASE}/authors/${id}?select=works_count,cited_by_count,counts_by_year${mailto()}`);
-  if (!r.ok) return { worksCount: 0, citedByCount: 0, firstPubYear: null };
+  if (!r.ok) return { worksCount: 0, citedByCount: 0, firstPubYear: null, recentWorksCount: null };
   const a = await r.json();
   const years = (a.counts_by_year ?? []).map((y: any) => y.year).filter((y: number) => !!y);
-  return { worksCount: a.works_count ?? 0, citedByCount: a.cited_by_count ?? 0, firstPubYear: years.length ? Math.min(...years) : null };
+  const nowY = new Date().getFullYear();
+  const recent = (a.counts_by_year ?? []).filter((y: any) => y.year >= nowY - 1).reduce((n: number, y: any) => n + (y.works_count ?? 0), 0);
+  return { worksCount: a.works_count ?? 0, citedByCount: a.cited_by_count ?? 0, firstPubYear: years.length ? Math.min(...years) : null, recentWorksCount: recent };
 }

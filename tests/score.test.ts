@@ -6,7 +6,7 @@ import type { Candidate } from "../lib/types.ts";
 const base = (o: Partial<Candidate> = {}): Candidate => ({
   authorId: "A1", name: "X", orcid: null, institutions: ["Columbia"],
   works: [{ id: "W1", title: "t", year: 2025, doi: null, url: null, venue: null, citedBy: 0, position: "first", isCorresponding: false }],
-  worksCount: 3, citedByCount: 5, firstPubYear: 2024, education: [], isCurrentStudent: null, score: 0, brief: null, ...o,
+  worksCount: 3, citedByCount: 5, firstPubYear: 2024, recentWorksCount: null, reasons: [], education: [], isCurrentStudent: null, score: 0, brief: null, ...o,
 });
 
 test("isCurrentStudent true when an education entry has no end year", () => {
@@ -31,4 +31,18 @@ test("senior author with 200 works scores below early-career", () => {
 test("more matching works scores higher", () => {
   const two = base({ works: [base().works[0], { ...base().works[0], id: "W2" }] });
   assert.ok(score(two) > score(base()));
+});
+
+test("momentum: recent share of output adds up to +10", () => {
+  const hot = base({ worksCount: 10, recentWorksCount: 10 });
+  const cold = base({ worksCount: 10, recentWorksCount: 1 });
+  assert.ok(score(hot) > score(cold));
+  assert.equal(score(hot) - score(cold), 9);
+});
+test("reasons explain the score", () => {
+  const c = base({ isCurrentStudent: true, worksCount: 4, recentWorksCount: 4 });
+  score(c);
+  assert.ok(c.reasons.some((r) => r.includes("first-author")));
+  assert.ok(c.reasons.some((r) => r.includes("current student")));
+  assert.ok(c.reasons.some((r) => r.startsWith("momentum")));
 });
