@@ -24,10 +24,10 @@ http.createServer(async (req, res) => {
     let body = "";
     for await (const ch of req) body += ch;
     try {
-      const { q } = JSON.parse(body || "{}");
+      const { q, criteria } = JSON.parse(body || "{}");
       if (!q || typeof q !== "string") { res.writeHead(400, { "content-type": "application/json" }); res.end(JSON.stringify({ error: "q required" })); return; }
       const t = Date.now();
-      const out = await runSearch(q);
+      const out = await runSearch(q, criteria);
       console.log(`search "${q}" -> ${out.candidates.length} candidates in ${Date.now() - t}ms`);
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify(out));

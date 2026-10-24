@@ -46,3 +46,13 @@ test("reasons explain the score", () => {
   assert.ok(c.reasons.some((r) => r.includes("current student")));
   assert.ok(c.reasons.some((r) => r.startsWith("momentum")));
 });
+test("thesis fit adds 3 per yes and 1 per partial, with a reason", () => {
+  const fit = [{ criterion: "a", verdict: "yes" as const, evidence: "e" }, { criterion: "b", verdict: "partial" as const, evidence: "e" }, { criterion: "c", verdict: "no" as const, evidence: "e" }];
+  const c = base({ fit });
+  assert.equal(score(c) - score(base()), 4);
+  assert.ok(c.reasons.includes("thesis fit: 1 yes, 1 partial of 3 criteria +4"));
+});
+test("no criteria -> no thesis-fit reason", () => {
+  const c = base(); score(c);
+  assert.ok(!c.reasons.some((r) => r.startsWith("thesis fit")));
+});

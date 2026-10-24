@@ -10,6 +10,6 @@ export default async function handler(req: any, res: any) {
   catch { res.status(400).json({ error: "invalid JSON" }); return; }
   const q = body.q;
   if (!q || typeof q !== "string") { res.status(400).json({ error: "q required" }); return; }
-  try { res.status(200).json(await runSearch(q)); }
+  try { res.status(200).json(await runSearch(q, body.criteria)); }
   catch (e: any) { res.status(500).json({ error: e?.message ?? String(e) }); }
 }

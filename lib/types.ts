@@ -36,6 +36,7 @@ export type Candidate = {
   score: number;
   brief: string | null;
   signals: Signal[];               // founder signals from lib/sources/* (GitHub, arXiv, NSF, ...)
+  fit: Fit[];                      // thesis-fit verdicts per investor criterion ([] when the search has no criteria)
 };
 
 export type NewsSignal = {
@@ -51,9 +52,16 @@ export type NewsSignal = {
 export type SearchResponse = {
   query: string;
   keywords: string;
+  criteria: string[];                                    // investor criteria from an uploaded thesis (may be [])
   totalWorks: number;
   candidates: Candidate[];
   market: NewsSignal[];                                  // akta.pro news signals for the thesis
   roundtable: { path: string; version: string | null; bank: string | null } | null; // saved shortlist
+  changes: Changes | null;                               // diff vs the previous saved shortlist for this thesis
+  tookMs?: number;
   integrations: { nicrron: boolean; prism: boolean; akta: boolean; roundtable: boolean };
 };
+
+export type Fit = { criterion: string; verdict: "yes" | "partial" | "no"; evidence: string };
+
+export type Changes = { prevAt: string | null; added: string[]; dropped: string[]; kept: number };

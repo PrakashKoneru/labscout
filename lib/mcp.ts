@@ -17,6 +17,7 @@ export const TOOLS = [
       properties: {
         query: { type: "string", description: "Investment thesis in plain English, e.g. 'protein design with diffusion models'" },
         limit: { type: "integer", minimum: 1, maximum: 10, default: 10, description: "Max students to return" },
+        criteria: { type: "array", items: { type: "string" }, maxItems: 4, description: "Optional investor criteria; each student gets a yes/partial/no fit verdict with evidence" },
       },
       required: ["query"],
     },
@@ -24,7 +25,7 @@ export const TOOLS = [
 ];
 
 type Rpc = { jsonrpc: "2.0"; id?: string | number | null; method: string; params?: any };
-type Search = (q: string) => Promise<SearchResponse>;
+type Search = (q: string, criteria?: unknown) => Promise<SearchResponse>;
 
 const ok = (id: Rpc["id"], result: unknown) => ({ jsonrpc: "2.0", id: id ?? null, result });
 const err = (id: Rpc["id"], code: number, message: string) => ({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
@@ -51,7 +52,7 @@ export async function handleRpc(msg: Rpc, search: Search): Promise<object | null
       if (name !== "search_students") return err(msg.id, -32602, `Unknown tool: ${name}`);
       if (!args.query || typeof args.query !== "string") return err(msg.id, -32602, "query (string) is required");
       try {
-        const res = await search(args.query);
+        const res = await search(args.query, args.criteria);
         const limit = Math.max(1, Math.min(10, Number(args.limit) || 10));
         const candidates = res.candidates.slice(0, limit);
         let text = renderShortlist(res.query, res.keywords, candidates);

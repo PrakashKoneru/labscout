@@ -1,5 +1,6 @@
 import type { Candidate, Education } from "./types.ts";
 import type { Signal } from "./sources/types.ts";
+import { fitPoints } from "./fit.ts";
 
 export function isCurrentStudent(edu: Education[]): boolean | null {
   if (edu.length === 0) return null;
@@ -50,6 +51,14 @@ export function score(c: Candidate): number {
     if (pts <= 0) continue;
     s += pts;
     reasons.push(`${src}: ${describe(list)} +${pts}`);
+  }
+
+  const fit = c.fit ?? [];
+  if (fit.length) {
+    const pts = fitPoints(fit);
+    const yes = fit.filter((f) => f.verdict === "yes").length, part = fit.filter((f) => f.verdict === "partial").length;
+    s += pts;
+    reasons.push(`thesis fit: ${yes} yes, ${part} partial of ${fit.length} criteria +${pts}`);
   }
 
   c.reasons = reasons;

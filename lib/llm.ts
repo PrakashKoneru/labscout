@@ -1,4 +1,5 @@
-import type { Candidate } from "./types.ts";
+import type { Candidate, Fit } from "./types.ts";
+import { fitPrompt, parseFit } from "./fit.ts";
 import { trace } from "./prism.ts";
 
 const MODEL = "anthropic/claude-haiku-5-5";
@@ -46,4 +47,11 @@ export async function writeBrief(c: Candidate, query: string): Promise<string> {
   const text = await ask(`You write 3-line "why this student deserves a coffee" briefs for a pre-seed VC. Be concrete, no hype, only use the facts below. Each line max 25 words, plain text, no markdown, no line labels. Line 1: what they built/published. Line 2: why it fits the VC's thesis. Line 3: the one question to ask them.\n\nVC thesis: ${query}\nName: ${c.name}\nAffiliation: ${c.institutions.join(", ")}\nEducation: ${edu}\nTotal papers: ${c.worksCount ?? "?"}, citations: ${c.citedByCount ?? "?"}\nMatching papers:\n${works}`, 3000, "brief-writer", sessionFor(query));
   if (!text) throw new Error("LLM returned empty brief");
   return text;
+}
+
+/** Per-criterion fit verdicts. No criteria -> no LLM call. Max tokens stays >= 1500 (hidden reasoning budget). */
+export async function checkFit(c: Candidate, criteria: string[], query: string): Promise<Fit[]> {
+  if (!criteria.length) return [];
+  const raw = await ask(fitPrompt(c, criteria, query), 2500, "fit-checker", sessionFor(query));
+  return parseFit(raw, criteria);
 }

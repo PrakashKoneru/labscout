@@ -2,9 +2,10 @@ import { aggregate } from "./aggregate.ts";
 import { score, isCurrentStudent } from "./score.ts";
 import { searchWorks, getAuthor } from "./openalex.ts";
 import { getEducation } from "./orcid.ts";
-import { parseQuery, writeBrief, sessionFor } from "./llm.ts";
+import { parseQuery, writeBrief, checkFit, sessionFor } from "./llm.ts";
+import { cleanCriteria } from "./fit.ts";
 import { marketSignals, personMentions, aktaEnabled } from "./akta.ts";
-import { saveShortlist, roundtableEnabled } from "./roundtable.ts";
+import { saveShortlist, readShortlist, parseShortlist, diffShortlist, roundtableEnabled } from "./roundtable.ts";
 import { trace, prismEnabled } from "./prism.ts";
 import { SOURCES } from "./sources/index.ts";
 import type { Signal, SourceContext, SourceModule } from "./sources/types.ts";
@@ -38,10 +39,14 @@ async function runWave(cands: Candidate[], ctx: SourceContext, active: SourceMod
   }));
 }
 
-export async function runSearch(q: string): Promise<SearchResponse> {
-  const hit = cache.get(q);
+export async function runSearch(q: string, criteriaIn: unknown = []): Promise<SearchResponse> {
+  const criteria = cleanCriteria(criteriaIn);
+  const key = criteria.length ? `${q}\u0000${criteria.join("|")}` : q;
+  const hit = cache.get(key);
   if (hit) return hit;
   const t0 = Date.now();
+  // Previous saved shortlist for this thesis ("since last run"). Starts now so it costs no wall time.
+  const prevP = readShortlist(q);
   const { keywords } = await parseQuery(q);
   // akta.pro market pull runs in parallel with the academic search
   const marketP = marketSignals(keywords);
@@ -61,21 +66,27 @@ export async function runSearch(q: string): Promise<SearchResponse> {
   top.forEach((c) => (c.score = score(c)));
   top.sort((a, b) => b.score - a.score);
   const final = top.slice(0, 10);
+  // Briefs, thesis-fit checks and press mentions all run in parallel.
   await Promise.all([
     ...final.map(async (c) => { try { c.brief = await writeBrief(c, q); } catch { c.brief = null; } }),
+    ...final.map(async (c) => { try { c.fit = await checkFit(c, criteria, q); } catch { c.fit = []; } }),
     ...final.slice(0, 5).map(async (c) => { c.mentions = (await personMentions(c.name, 3, [...c.institutions, ...keywords.split(/\s+/)])).slice(0, 3); }),
   ]);
+  if (criteria.length) { final.forEach((c) => (c.score = score(c))); final.sort((a, b) => b.score - a.score); }
   const market = await marketP;
+  const prevMd = await prevP;
+  const prev = prevMd ? parseShortlist(prevMd) : null;
+  const changes = prev && prev.names.length ? diffShortlist(prev, final.map((c) => c.name)) : null;
   const roundtable = await saveShortlist(q, keywords, final);
+  const tookMs = Date.now() - t0;
   const payload: SearchResponse = {
-    query: q, keywords, totalWorks: works.length, candidates: final, market, roundtable,
+    query: q, keywords, criteria, totalWorks: works.length, candidates: final, market, roundtable, changes, tookMs,
     integrations: { nicrron: true, prism: prismEnabled(), akta: aktaEnabled(), roundtable: roundtableEnabled() },
   };
   // One summary trace per search so PRISM shows the whole run, not only the model calls.
   void trace({ model: "labscout-pipeline", input: q, output: `${final.length} candidates; top: ${final.map((c) => c.name).join(", ")}`,
-    latencyMs: Date.now() - t0, sessionId: sessionFor(q), agentId: "search-orchestrator",
-    metadata: { keywords, totalWorks: works.length, market: market.length, roundtable: roundtable?.path ?? null } });
-  cache.set(q, payload);
+    latencyMs: tookMs, sessionId: sessionFor(q), agentId: "search-orchestrator",
+    metadata: { keywords, criteria: criteria.length, totalWorks: works.length, market: market.length, roundtable: roundtable?.path ?? null, newSinceLastRun: changes?.added.length ?? null } });
+  cache.set(key, payload);
   return payload;
 }
-
