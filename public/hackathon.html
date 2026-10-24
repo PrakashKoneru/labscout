@@ -94,7 +94,7 @@
     <ol>
       <li>Roster pulled from the organizers&rsquo; public team sheet. Emails are used for matching only and never published.</li>
       <li>GitHub identity first: an account whose public email matches the registration, or whose handle and name match the LinkedIn slug.</li>
-      <li>Then the same 23 founder-signal sources as Scout: GitHub, Hugging Face, PyPI/npm, Hacker News, YC, ORCID, NSF, NIH, arXiv, SEC Form D, NY corporations and more.</li>
+      <li>Then the same founder-signal sources as Scout: GitHub, Hugging Face, PyPI/npm, Hacker News, YC, ORCID, NSF, NIH, arXiv, SEC Form D, NY corporations and more.</li>
       <li>Strict matching. Common names (25+ ORCID namesakes) keep only handle-verified evidence. Company registries count only when the filing names the attendee&rsquo;s own company.</li>
       <li>Score = sum of signal weights, capped at 15 per source. Same scorer as Scout, no seniority penalty. No evidence = 0, not &ldquo;bad&rdquo;.</li>
       <li>Team score = sum of the top 3 member scores.</li>
@@ -188,7 +188,7 @@
     $("#s-n").innerHTML = n(d.count);
     $("#s-ev").innerHTML = n(d.withSignals) + "<small>" + Math.round(100 * d.withSignals / Math.max(1, d.count)) + "%</small>";
     $("#s-t").innerHTML = n(d.teams.length);
-    $("#s-src").innerHTML = n((d.sources || []).length) + "<small>+ GitHub ID match</small>";
+    $("#s-src").innerHTML = n((d.sources || []).length) + "<small>+ GitHub ID</small>";
     $("#lead").textContent = (d.event || "Hackathon") + " roster, batch-run through Labscout’s founder-signal sources. Updated " +
       new Date(d.generatedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) + ".";
     render();
