@@ -48,6 +48,14 @@
   .foot { display:flex; justify-content:space-between; align-items:center; gap: 10px; margin-top: 6px; }
   .copy { background: #fff; border: 1px solid var(--line); font-size: 12px; padding: 2px 10px; color: var(--fg); }
   .copy:hover { border-color: #999; }
+  .market { border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+  .market h2 { font-size: 15px; margin: 0 0 8px; }
+  .news { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+  .news li { margin: 6px 0; }
+  .news .summary { color: #555; font-size: 12px; margin-top: 2px; }
+  .mentions { margin: 6px 0; font-size: 13px; }
+  .saved code { background: #f3f3f3; padding: 1px 4px; border-radius: 3px; }
+  .integ { margin-top: 16px; letter-spacing: .02em; }
 </style>
 </head>
 <body>
@@ -75,7 +83,7 @@
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
   var form = $("f"), input = $("q"), btn = $("go"), statusEl = $("status"), results = $("results");
-  var STEPS = ["Reading your thesis", "Searching OpenAlex", "Checking ORCID", "Writing briefs"];
+  var STEPS = ["Reading your thesis (Claude via Nicrron)", "Searching OpenAlex + akta.pro news", "Checking ORCID", "Writing briefs", "Saving shortlist to Roundtable"];
   var stepTimer = null;
   var current = [];
 
@@ -164,8 +172,36 @@
         '<div class="head"><span class="name">' + esc(c.name) + '</span><span class="inst">' + esc((c.institutions || []).join(" · ")) + "</span>" + badge(c) + "</div>" +
         (c.brief ? '<div class="brief">' + esc(c.brief) + "</div>" : "") +
         (works.length ? '<ul class="works">' + works.map(workItem).join("") + "</ul>" : "") +
+        mentionsBlock(c) +
         '<div class="foot"><span class="meta">' + foot.join(" · ") + '</span><button type="button" class="copy" data-i="' + i + '">Copy brief</button></div>' +
       "</div></div>";
+  }
+
+  function newsItem(n) {
+    var u = safeUrl(n.url);
+    var t = u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(n.title) + "</a>" : esc(n.title);
+    var meta = [n.publisher, n.publishedDate ? String(n.publishedDate).slice(0, 10) : null, n.sentiment].filter(Boolean).join(" · ");
+    return '<li>' + t + (meta ? ' <span class="meta">' + esc(meta) + "</span>" : "") + (n.summary ? '<div class="summary">' + esc(n.summary) + "</div>" : "") + "</li>";
+  }
+  function mentionsBlock(c) {
+    var m = c.mentions || [];
+    if (!m.length) return "";
+    return '<div class="mentions"><span class="meta">Press mentions (akta.pro):</span><ul class="news">' + m.map(newsItem).join("") + "</ul></div>";
+  }
+  function marketPanel(data) {
+    var m = data.market || [];
+    if (!m.length) return "";
+    return '<section class="market"><h2>Market pull <span class="meta">— recent news on this thesis, via akta.pro</span></h2><ul class="news">' + m.map(newsItem).join("") + "</ul></section>";
+  }
+  function savedLine(data) {
+    var r = data.roundtable;
+    if (!r) return "";
+    return '<p class="meta saved">Shortlist saved to Roundtable: <code>' + esc(r.path) + "</code>" + (r.version ? " (version " + esc(r.version) + ")" : "") + " — readable by every agent in the workspace.</p>";
+  }
+  function integrationsLine(data) {
+    var i = data.integrations || {};
+    var items = [["Nicrron", i.nicrron], ["PRISM", i.prism], ["akta.pro", i.akta], ["Roundtable", i.roundtable]];
+    return '<p class="meta integ">' + items.map(function (x) { return (x[1] ? "●" : "○") + " " + x[0]; }).join("  ") + "</p>";
   }
 
   function render(data) {
@@ -173,7 +209,7 @@
     statusEl.className = "";
     statusEl.textContent = "Searched OpenAlex for \u201c" + (data.keywords || "") + "\u201d across Columbia, NYU, Cornell and Cornell Tech (2024\u201326): " +
       (data.totalWorks == null ? 0 : data.totalWorks) + " papers \u2192 " + current.length + " ranked students.";
-    results.innerHTML = current.map(card).join("");
+    results.innerHTML = marketPanel(data) + current.map(card).join("") + savedLine(data) + integrationsLine(data);
   }
 
   function copyText(c) {

@@ -28,10 +28,21 @@ export type Candidate = {
   firstPubYear: number | null;
   recentWorksCount: number | null; // works in the last 2 years (OpenAlex counts_by_year)
   reasons: string[];               // human-readable score breakdown
+  mentions: NewsSignal[];          // akta.pro press mentions (top candidates only)
   education: Education[];
   isCurrentStudent: boolean | null;
   score: number;
   brief: string | null;
+};
+
+export type NewsSignal = {
+  title: string;
+  url: string;
+  publisher: string | null;
+  publishedDate: string | null;
+  sentiment: string | null;
+  summary: string | null;
+  companies: string[];
 };
 
 export type SearchResponse = {
@@ -39,4 +50,7 @@ export type SearchResponse = {
   keywords: string;
   totalWorks: number;
   candidates: Candidate[];
+  market: NewsSignal[];                                  // akta.pro news signals for the thesis
+  roundtable: { path: string; version: string | null; bank: string | null } | null; // saved shortlist
+  integrations: { nicrron: boolean; prism: boolean; akta: boolean; roundtable: boolean };
 };
