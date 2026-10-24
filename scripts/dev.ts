@@ -13,6 +13,7 @@ try {
 } catch {}
 
 const { runSearch } = await import("../api/search.ts");
+const { handleRpc } = await import("../lib/mcp.ts");
 
 const PUB = new URL("../public/", import.meta.url).pathname;
 const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -36,7 +37,18 @@ http.createServer(async (req, res) => {
     }
     return;
   }
-  const rel = req.url === "/" ? "index.html" : (req.url ?? "").split("?")[0];
+  if (req.method === "POST" && req.url === "/api/mcp") {
+    let body = "";
+    for await (const ch of req) body += ch;
+    let msg: any;
+    try { msg = JSON.parse(body || "null"); } catch { res.writeHead(400); res.end(); return; }
+    const out = Array.isArray(msg) ? (await Promise.all(msg.map((m) => handleRpc(m, runSearch)))).filter(Boolean) : await handleRpc(msg, runSearch);
+    if (!out || (Array.isArray(out) && !out.length)) { res.writeHead(202); res.end(); return; }
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify(out));
+    return;
+  }
+  const rel = req.url === "/" ? "index.html" : req.url === "/docs" ? "docs.html" : (req.url ?? "").split("?")[0];
   const f = path.join(PUB, path.normalize(rel).replace(/^(\.\.[/\\])+/, ""));
   if (f.startsWith(PUB) && existsSync(f)) {
     res.writeHead(200, { "content-type": TYPES[path.extname(f)] ?? "application/octet-stream" });

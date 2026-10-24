@@ -1,3 +1,6 @@
 {
-  "functions": { "api/search.ts": { "maxDuration": 60, "includeFiles": "lib/**" } }
+  "functions": {
+    "api/*.ts": { "maxDuration": 60, "includeFiles": "lib/**" }
+  },
+  "rewrites": [{ "source": "/docs", "destination": "/docs.html" }]
 }

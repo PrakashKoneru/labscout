@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Labscout — Team guide: usage, sponsors, API &amp; MCP</title>
+<style>
+  :root { --fg:#111; --muted:#666; --line:#e5e5e5; --soft:#f6f6f6; --green:#137333; }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--fg); font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 820px; padding: 32px 24px 80px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 16px; margin: 22px 0 6px; }
+  p, li { max-width: 72ch; }
+  a { color: inherit; }
+  .muted, .meta { color: var(--muted); }
+  nav { margin: 16px 0 8px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  code { background: var(--soft); padding: 1px 5px; border-radius: 3px; font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; position: relative; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0; }
+  th, td { text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); padding: 8px 10px 8px 0; }
+  th { font-weight: 600; }
+  .pill { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 10px; background: #e6f4ea; color: var(--green); font-weight: 600; }
+  .note { border-left: 3px solid var(--fg); padding: 4px 12px; margin: 12px 0; background: var(--soft); }
+  .copy { position: absolute; top: 6px; right: 6px; font: 12px system-ui; border: 1px solid var(--line); background: #fff; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+  ol li, ul li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Labscout team guide</h1>
+  <p class="muted">PitchBook for students. Team 9, Deal Flow NYC VC Hackathon, Track 1: Sourcing. Everything below is live.</p>
+  <nav>
+    <a href="#use">1. Use the product</a>
+    <a href="#sponsors">2. How we use the sponsors</a>
+    <a href="#api">3. REST API</a>
+    <a href="#mcp">4. MCP endpoint</a>
+    <a href="#accounts">5. Sponsor dashboards &amp; access</a>
+    <a href="#dev">6. Run &amp; change the code</a>
+    <a href="#demo">7. Demo script</a>
+  </nav>
+
+  <table>
+    <tr><th>App</th><td><a href="/">labscout-jakdemir.vercel.app</a></td></tr>
+    <tr><th>REST API</th><td><code>POST https://labscout-jakdemir.vercel.app/api/search</code></td></tr>
+    <tr><th>MCP</th><td><code>https://labscout-jakdemir.vercel.app/api/mcp</code> (Streamable HTTP, no auth)</td></tr>
+    <tr><th>Repo</th><td><a href="https://github.com/jakdemir/labscout">github.com/jakdemir/labscout</a></td></tr>
+    <tr><th>Offline demo</th><td><a href="/?mock=1">/?mock=1</a> renders canned results if the Wi-Fi dies</td></tr>
+  </table>
+
+  <!-- 1 -->
+  <h2 id="use">1. Use the product</h2>
+  <ol>
+    <li>Open <a href="/">the app</a>. Type the fund's thesis in plain English, for example <em>"students working on protein design with diffusion models"</em>, or click one of the example chips.</li>
+    <li>Click <strong>Find students</strong>. It takes 10–20 seconds. The progress line shows each stage: reading the thesis, searching OpenAlex and akta.pro, checking ORCID, writing briefs, saving to Roundtable.</li>
+    <li>Read the results, top to bottom:
+      <ul>
+        <li><strong>Market pull</strong> panel: recent news on the thesis from akta.pro, with AI summaries. This answers "is the market moving?"</li>
+        <li><strong>Ranked cards</strong>, one per student: name, school, and a green <span class="pill">Current student</span> badge when ORCID confirms an education entry with no end date. "Unverified" means there was no ORCID data. It doesn't mean they're not a student.</li>
+        <li>A <strong>3-line brief</strong>: what they published, why it fits the thesis, and the one question to ask them.</li>
+        <li><strong>Evidence</strong>: up to 3 matching papers (author position, year, venue, link). Footer links go to OpenAlex and ORCID. Hover over <code>score ⓘ</code> to see exactly how the rank was computed.</li>
+        <li><strong>Press mentions</strong> (akta.pro) appear only when an article names the student <em>and</em> their university or a thesis keyword. That filter keeps out people with the same name.</li>
+      </ul>
+    </li>
+    <li><strong>Copy brief</strong> on any card puts a forwardable text with sources on the clipboard. Paste it into an email to a partner.</li>
+    <li>The bottom line shows where the shortlist was saved in Roundtable, plus a <code>● Nicrron ● PRISM ● akta.pro ● Roundtable</code> status row. A filled dot means that integration ran.</li>
+  </ol>
+
+  <h3>How the ranking works</h3>
+  <ul>
+    <li>+10 for each matching paper as first author, +3 as a middle author, +1 as last author. Plus up to +5 for citations and +2 if published in 2025 or later.</li>
+    <li>+15 for a student confirmed by ORCID, −15 when ORCID shows their education has ended.</li>
+    <li><strong>Momentum</strong>: up to +10, based on the share of the author's papers from the last two years. Recent growth counts more than a long career total.</li>
+    <li>Penalties for established researchers (more than 30 papers, or publishing since before 2018). This keeps faculty below students.</li>
+  </ul>
+  <p class="muted">Coverage: Columbia, NYU, Cornell and Cornell Tech; papers from 2024–26. The list of schools is in <code>lib/institutions.ts</code>.</p>
+
+  <h3>Queries that demo well</h3>
+  <p><code>protein design with diffusion models</code> · <code>LLM agents for software engineering</code> · <code>battery materials discovery with machine learning</code> · <code>AI for drug discovery</code> · <code>quantum computing error correction</code> · <code>AI chips and hardware accelerators</code></p>
+
+  <!-- 2 -->
+  <h2 id="sponsors">2. How we use the sponsors</h2>
+  <p>All four required sponsors run on every search. The status row under the results shows which ones ran.</p>
+  <table>
+    <tr><th>Sponsor</th><th>What it does in Labscout</th><th>Code</th></tr>
+    <tr><td><strong>NicrronNinoo</strong></td>
+      <td>All LLM work goes through the Nicrron gateway (model <code>anthropic/claude-haiku-5-5</code>). It turns the thesis into search keywords and writes the 3-line brief for each top-10 student.</td>
+      <td><code>lib/llm.ts</code></td></tr>
+    <tr><td><strong>PRISM by Block Convey</strong></td>
+      <td>Every model call is traced to PRISM, plus one summary trace per search. All traces from one search share a <code>session_id</code> (<code>search:&lt;query&gt;</code>), so the whole run appears as one conversation. Agents: <code>query-parser</code>, <code>brief-writer</code>, <code>search-orchestrator</code>.</td>
+      <td><code>lib/prism.ts</code></td></tr>
+    <tr><td><strong>akta.pro by Wokelo AI</strong></td>
+      <td>News Signals API. (1) The <em>Market pull</em> panel: topic news on the thesis keywords, with AI summaries, sentiment and the companies mentioned. (2) <em>Press mentions</em>: a person search on each top-5 student, filtered by university or thesis keyword. This is our entry for Best Use of External Data.</td>
+      <td><code>lib/akta.ts</code></td></tr>
+    <tr><td><strong>Roundtable</strong></td>
+      <td>Each search writes a versioned markdown shortlist (brief, evidence, score reasons, links) to <code>labscout/&lt;query-slug&gt;.md</code> through Roundtable's <code>write_file</code> tool. Any agent in the workspace can read it: the shortlist becomes shared memory for other agents (a diligence bot, a CRM bot), not a dead-end UI.</td>
+      <td><code>lib/roundtable.ts</code></td></tr>
+  </table>
+  <p>Data sources (free, no keys needed): <a href="https://api.openalex.org">OpenAlex</a> for papers and authors, <a href="https://pub.orcid.org">ORCID public API</a> for education history. We don't scrape LinkedIn or Google Scholar.</p>
+  <p class="muted">Each integration fails safely. If a key is missing or a service is slow, that panel is skipped and the search still returns results.</p>
+
+  <!-- 3 -->
+  <h2 id="api">3. REST API</h2>
+  <p><code>POST /api/search</code> takes JSON <code>{"q": "&lt;thesis&gt;"}</code> and returns the full result. No auth. Allow up to 60 seconds; usually it takes 10–20. Repeating a query on the same server instance comes back from cache instantly.</p>
+  <pre><code>curl -s -X POST https://labscout-jakdemir.vercel.app/api/search \
+  -H 'content-type: application/json' \
+  -d '{"q":"AI for drug discovery"}'</code></pre>
+  <h3>Response shape</h3>
+  <pre><code>{
+  "query": "AI for drug discovery",
+  "keywords": "drug discovery machine learning molecular",   // from Nicrron/Claude
+  "totalWorks": 50,                                          // OpenAlex papers scanned
+  "candidates": [{
+    "name": "…", "institutions": ["Columbia"],
+    "isCurrentStudent": true | false | null,                 // ORCID
+    "score": 38.6,
+    "reasons": ["3 matching papers (1 first-author…) +30", "verified current student (ORCID) +15", "momentum: …"],
+    "brief": "line 1\nline 2\nline 3",
+    "works": [{ "title", "year", "venue", "url", "position": "first|middle|last", "citedBy" }],
+    "worksCount": 9, "citedByCount": 50, "recentWorksCount": 7,
+    "education": [{ "institution", "degree", "startYear", "endYear" }],
+    "mentions": [{ "title", "url", "publisher", "publishedDate", "summary" }],   // akta.pro
+    "authorId": "https://openalex.org/A…", "orcid": "https://orcid.org/…" | null
+  }],
+  "market": [{ "title", "url", "publisher", "publishedDate", "sentiment", "summary", "companies" }],  // akta.pro
+  "roundtable": { "path": "labscout/ai-for-drug-discovery.md", "version": "fdef16640495" },
+  "integrations": { "nicrron": true, "prism": true, "akta": true, "roundtable": true }
+}</code></pre>
+  <p>Errors return <code>400 {"error":"q required"}</code> or <code>500 {"error":"…"}</code>.</p>
+
+  <!-- 4 -->
+  <h2 id="mcp">4. MCP endpoint</h2>
+  <p>Labscout is also an MCP server, so any agent can source students as a tool call.</p>
+  <table>
+    <tr><th>URL</th><td><code>https://labscout-jakdemir.vercel.app/api/mcp</code></td></tr>
+    <tr><th>Transport</th><td>Streamable HTTP. Stateless, JSON responses, no auth.</td></tr>
+    <tr><th>Tool</th><td><code>search_students(query: string, limit?: 1–10)</code> returns a markdown shortlist plus the full JSON in <code>structuredContent</code>.</td></tr>
+  </table>
+
+  <h3>Claude Code</h3>
+  <pre><code>claude mcp add --transport http labscout https://labscout-jakdemir.vercel.app/api/mcp</code></pre>
+  <h3>Cursor / Claude Desktop / any client with remote MCP</h3>
+  <pre><code>{
+  "mcpServers": {
+    "labscout": { "url": "https://labscout-jakdemir.vercel.app/api/mcp" }
+  }
+}</code></pre>
+  <p class="muted">For a client that only supports stdio servers, wrap it: <code>"command": "npx", "args": ["-y", "mcp-remote", "https://labscout-jakdemir.vercel.app/api/mcp"]</code>.</p>
+  <h3>Hermes Agent (<code>~/.hermes/config.yaml</code>)</h3>
+  <pre><code>mcp_servers:
+  labscout:
+    url: https://labscout-jakdemir.vercel.app/api/mcp</code></pre>
+  <h3>Test it with curl</h3>
+  <pre><code>curl -s https://labscout-jakdemir.vercel.app/api/mcp -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+
+curl -s https://labscout-jakdemir.vercel.app/api/mcp -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_students","arguments":{"query":"robotics manipulation","limit":3}}}'</code></pre>
+  <p>Then ask your agent: <em>"Use labscout to find students working on battery materials and draft intro emails for the top 3."</em></p>
+
+  <h3>Sponsor MCP servers (optional, they need your own key)</h3>
+  <table>
+    <tr><th>Roundtable</th><td><code>https://roundtable.bot/mcp</code>. Read the shortlists Labscout saved (<code>read_file</code>, <code>browse_folder</code>) from your own agent. Get a key under Agents → Connect agent → Assistant.</td></tr>
+    <tr><th>akta.pro</th><td>MCP setup at <a href="https://docs.akta.pro/docs/developer-tools/mcp/setup">docs.akta.pro → MCP</a>. Company data, news and list generation.</td></tr>
+  </table>
+
+  <!-- 5 -->
+  <h2 id="accounts">5. Sponsor dashboards &amp; access</h2>
+  <p>Jak owns the accounts. Ask him to invite you. Never paste keys into chat or commit them; they live only in Vercel env vars and in Jak's local <code>.env.local</code>.</p>
+  <table>
+    <tr><th>Sponsor</th><th>Dashboard</th><th>What to look at</th><th>Get access</th></tr>
+    <tr><td>Nicrron</td><td><a href="https://nicrron.ai/dashboard/keys">nicrron.ai/dashboard</a></td><td>Usage and balance per model</td><td>Your own free account works for local dev</td></tr>
+    <tr><td>PRISM</td><td><a href="https://prism.blockconvey.com">prism.blockconvey.com</a></td><td>Traces → filter by agent <code>brief-writer</code>; Sessions → one per search; scores and latency</td><td>Owner: <em>Invite your team → Add team member</em></td></tr>
+    <tr><td>akta.pro</td><td><a href="https://playground.akta.pro">playground.akta.pro</a></td><td>Credits used; try queries in the playground</td><td>Use your own account (promo <code>DEALFLOW50</code>)</td></tr>
+    <tr><td>Roundtable</td><td><a href="https://roundtable.bot/app">roundtable.bot/app</a></td><td>Browse → <code>labscout/*.md</code>: each shortlist with author and version history</td><td>Owner: Settings → Team → share the <code>team-…</code> code; sign up and enter it</td></tr>
+  </table>
+
+  <!-- 6 -->
+  <h2 id="dev">6. Run &amp; change the code</h2>
+  <p>No dependencies and no build step: Node 22.6+ runs the TypeScript directly.</p>
+  <pre><code>git clone https://github.com/jakdemir/labscout && cd labscout
+# create .env.local with your own keys (names only shown here):
+#   NICRRON_API_KEY=…          required (LLM)
+#   OPENALEX_MAILTO=you@…      recommended
+#   AKTA_API_KEY=…             optional
+#   PRISMTRACE_API_KEY=…  PRISMTRACE_PROJECT_ID=…   optional
+#   ROUNDTABLE_KEY=…           optional
+node scripts/dev.ts             # http://localhost:3000  (also /docs, /api/search, /api/mcp)
+node --test tests/*.test.ts     # unit tests</code></pre>
+  <table>
+    <tr><th>File</th><th>What it does</th></tr>
+    <tr><td><code>api/search.ts</code></td><td>Runs the search and serves <code>/api/search</code> on Vercel</td></tr>
+    <tr><td><code>api/mcp.ts</code>, <code>lib/mcp.ts</code></td><td>The MCP server</td></tr>
+    <tr><td><code>lib/openalex.ts</code>, <code>lib/orcid.ts</code></td><td>Research data</td></tr>
+    <tr><td><code>lib/aggregate.ts</code>, <code>lib/score.ts</code></td><td>Groups papers by author and ranks them (tested)</td></tr>
+    <tr><td><code>lib/llm.ts</code> · <code>lib/prism.ts</code> · <code>lib/akta.ts</code> · <code>lib/roundtable.ts</code></td><td>One file per sponsor</td></tr>
+    <tr><td><code>public/index.html</code>, <code>public/docs.html</code></td><td>The UI and this page</td></tr>
+  </table>
+  <p>Deploy: push to <code>main</code>, then Jak runs <code>vercel --prod</code> (personal <code>jakdemir</code> scope). Change ranking weights in <code>lib/score.ts</code> and run the tests.</p>
+
+  <!-- 7 -->
+  <h2 id="demo">7. Demo script (about 3 minutes)</h2>
+  <ol>
+    <li><strong>Problem (20 s).</strong> "Every fund chases the same founders on LinkedIn at the same time. The best technical founders show up in papers and grants 18 months before they incorporate."</li>
+    <li><strong>Live search (60 s).</strong> Type a judge's thesis. Show the Market pull panel (akta.pro), then the #1 card: badge, brief, evidence links, and the <code>score ⓘ</code> breakdown.</li>
+    <li><strong>Forwardable (15 s).</strong> Copy brief, paste into an email.</li>
+    <li><strong>Agent-native (30 s).</strong> Open Roundtable and show the saved shortlist file. Run the same query from Claude through the MCP endpoint. Open PRISM and show the traces for that search.</li>
+    <li><strong>Business (45 s).</strong> Buyer: platform teams and associates at pre-seed funds. Price: about $5–10k per fund per year. First 10 customers: the funds in this room. Why now: open research data plus LLM briefs make this cheap for the first time.</li>
+  </ol>
+  <p class="muted">If the Wi-Fi fails, use <a href="/?mock=1">/?mock=1</a>.</p>
+</main>
+<script>
+  document.querySelectorAll("pre").forEach(function (pre) {
+    var b = document.createElement("button"); b.className = "copy"; b.textContent = "Copy";
+    b.onclick = function () { navigator.clipboard.writeText(pre.innerText.replace(/\nCopy$/, "")).then(function () { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy"; }, 1200); }); };
+    pre.appendChild(b);
+  });
+</script>
+</body>
+</html>
