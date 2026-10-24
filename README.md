@@ -25,6 +25,7 @@ Built at **Deal Flow — NYC's first VC hackathon** (Betaworks, October 24, 2026
 1. Create `.env.local` with `NICRRON_API_KEY` and `OPENALEX_MAILTO`.
 2. `node scripts/dev.ts` → http://localhost:3000
 3. Tests: `node --test tests/`
+4. Hackathon tab data: `node scripts/hackathon.ts` re-pulls the attendee sheet, runs every attendee through the signal sources (resumable cache in `.cache/`) and writes `public/data/hackathon.json`. Flags: `--fresh`, `--briefs N`, `--openalex`, `--limit N`.
 
 Offline demo of the UI: open `/index.html?mock=1` (uses a built-in sample response, no API calls).
 

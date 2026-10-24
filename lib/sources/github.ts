@@ -14,7 +14,7 @@ export type GhUser = {
   websiteUrl: string | null; url: string; email: string | null; repositories?: { nodes: GhRepo[] };
 };
 
-const QUERY = `query($q: String!) { search(query: $q, type: USER, first: 5) { nodes { ... on User {
+export const QUERY = `query($q: String!) { search(query: $q, type: USER, first: 5) { nodes { ... on User {
   login name bio company location websiteUrl url
   repositories(first: 5, ownerAffiliations: OWNER, isFork: false, orderBy: {field: STARGAZERS, direction: DESC}) {
     nodes { nameWithOwner url description stargazerCount forkCount pushedAt primaryLanguage { name }

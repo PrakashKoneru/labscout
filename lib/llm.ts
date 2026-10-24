@@ -32,6 +32,14 @@ export async function parseQuery(q: string): Promise<{ keywords: string }> {
   return { keywords: text || q };
 }
 
+/** 2-line brief for a hackathon attendee, grounded only in their sheet row and collected signals. */
+export async function writeAttendeeBrief(p: { name: string; type: string; org: string; title: string; theme: string; skills: string[] }, signals: { label: string }[]): Promise<string> {
+  const ev = signals.slice(0, 8).map((s) => `- ${s.label}`).join("\n") || "- none";
+  const text = await ask(`You write 2-line briefs on hackathon attendees for a pre-seed VC. Be concrete, no hype, only use the facts below. Each line max 25 words, plain text, no markdown, no labels. Line 1: what the public evidence shows they built or published. Line 2: the one question to ask them.\n\nName: ${p.name}\nRole: ${p.type}, ${p.title} at ${p.org}\nHackathon team idea: ${p.theme}\nSkills: ${p.skills.join(", ")}\nPublic evidence:\n${ev}`, 3000, "brief-writer", "hackathon:deal-flow-2026");
+  if (!text) throw new Error("LLM returned empty brief");
+  return text;
+}
+
 export async function writeBrief(c: Candidate, query: string): Promise<string> {
   const works = c.works.slice(0, 3).map((w) => `- [${w.position} author, ${w.year}${w.venue ? ", " + w.venue : ""}] ${w.title}`).join("\n");
   const edu = c.education.map((e) => `${e.degree ?? "degree"} at ${e.institution}${e.endYear ? ` (ended ${e.endYear})` : " (current)"}`).join("; ") || "unknown";

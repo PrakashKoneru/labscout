@@ -17,7 +17,7 @@ const { handleRpc } = await import("../lib/mcp.ts");
 const { thesisFromText } = await import("../lib/thesis.ts");
 
 const PUB = new URL("../public/", import.meta.url).pathname;
-const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".mjs": "text/javascript", ".md": "text/markdown" };
+const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".mjs": "text/javascript", ".md": "text/markdown", ".json": "application/json" };
 
 http.createServer(async (req, res) => {
   if (req.method === "POST" && req.url === "/api/search") {
@@ -63,7 +63,7 @@ http.createServer(async (req, res) => {
     res.end(JSON.stringify(out));
     return;
   }
-  const rel = req.url === "/" ? "index.html" : req.url === "/docs" ? "docs.html" : req.url === "/sponsors" ? "sponsors.html" : (req.url ?? "").split("?")[0];
+  const rel = req.url === "/" ? "index.html" : req.url === "/docs" ? "docs.html" : req.url === "/sponsors" ? "sponsors.html" : req.url === "/hackathon" ? "hackathon.html" : (req.url ?? "").split("?")[0];
   const f = path.join(PUB, path.normalize(rel).replace(/^(\.\.[/\\])+/, ""));
   if (f.startsWith(PUB) && existsSync(f)) {
     res.writeHead(200, { "content-type": TYPES[path.extname(f)] ?? "application/octet-stream" });
