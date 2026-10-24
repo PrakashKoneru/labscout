@@ -78,3 +78,15 @@ test("runCheck maps timeouts", async () => {
   const c = await runCheck({ id: "t", name: "t", role: "t", env: ["__T"] }, async () => { const e = new Error("t"); e.name = "TimeoutError"; throw e; });
   assert.equal(c.detail.reason, "timeout");
 });
+
+test("summarizeFolder reads Roundtable entries with provenance", async () => {
+  const { summarizeFolder, summarizeBanks } = await import("../lib/status.ts");
+  const f = summarizeFolder({ entries: [
+    { kind: "file", name: "a.md", path: "labscout/a.md", provenance: { version_id: "v1", created_at: 1792863122.27 } },
+    { kind: "file", name: "b.md", path: "labscout/b.md", provenance: { version_id: "v2", created_at: 1792863375.37 } },
+  ] });
+  assert.equal(f.count, 2);
+  assert.equal(f.latest[0].name, "b.md");
+  assert.equal(f.latest[0].version, "v2");
+  assert.equal(summarizeBanks([{ bank: "hermes-agent", files: 8 }]).banks[0].name, "hermes-agent");
+});

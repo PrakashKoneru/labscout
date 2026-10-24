@@ -69,7 +69,7 @@ export function summarizePrismTraces(arr: any[]): { total: number; byAgent: Reco
 export function summarizeBanks(json: any): { banks: { name: string; files: number | null }[]; totalFiles: number } {
   const list = Array.isArray(json) ? json : Array.isArray(json?.banks) ? json.banks : Array.isArray(json?.data) ? json.data : [];
   const banks = list.map((b: any) => ({
-    name: str(b?.name ?? b?.slug ?? b?.id, 80) ?? "bank",
+    name: str(b?.bank ?? b?.name ?? b?.slug ?? b?.id, 80) ?? "bank",
     files: num(b?.file_count ?? b?.files_count ?? b?.fileCount ?? b?.files) ?? (Array.isArray(b?.files) ? b.files.length : null),
   }));
   return { banks, totalFiles: banks.reduce((s: number, b: any) => s + (b.files ?? 0), 0) };
@@ -82,8 +82,8 @@ export function summarizeFolder(json: any): { count: number; latest: { name: str
     .filter((f: any) => (f?.type ?? f?.kind ?? "file") !== "folder" && (f?.is_dir ?? f?.isDir) !== true)
     .map((f: any) => ({
       name: (str(f?.name ?? f?.path, 120) ?? "file").replace(/^.*\//, ""),
-      version: str(f?.version_id ?? f?.version?.id ?? f?.latest_version_id ?? (typeof f?.version === "string" ? f.version : null), 60),
-      updatedAt: str(f?.updated_at ?? f?.updatedAt ?? f?.modified_at ?? f?.created_at, 40),
+      version: str(f?.provenance?.version_id ?? f?.version_id ?? f?.version?.id ?? f?.latest_version_id ?? (typeof f?.version === "string" ? f.version : null), 60),
+      updatedAt: str(f?.updated_at ?? f?.updatedAt ?? f?.modified_at ?? f?.created_at ?? (typeof f?.provenance?.created_at === "number" ? new Date(f.provenance.created_at * 1000).toISOString() : null), 40),
     }));
   files.sort((a: any, b: any) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
   return { count: files.length, latest: files.slice(0, 5) };
@@ -134,7 +134,10 @@ export const checkRoundtable = () => runCheck(
     const post = (tool: string, body: object) => getJson(`${RT_URL()}/api/tools/${tool}`, {
       method: "POST", headers: { authorization: `Bearer ${process.env.ROUNDTABLE_KEY}`, "content-type": "application/json" }, body: JSON.stringify(body),
     });
-    const [banks, folder] = await Promise.all([post("list_banks", {}), post("browse_folder", { path: "labscout/" }).catch(() => null)]);
+    // browse_folder needs the agent folder: list agent folders first, then open <agent>/labscout.
+    const [banks, root] = await Promise.all([post("list_banks", {}), post("browse_folder", {}).catch(() => null)]);
+    const agentId = (root?.json?.entries ?? []).find((e: any) => e?.kind === "agent" && e?.access === "write")?.agent_id;
+    const folder = agentId ? await post("browse_folder", { agent_id: agentId, path: "labscout" }).catch(() => null) : null;
     const b = summarizeBanks(banks.json);
     const f = folder && folder.status === 200 ? summarizeFolder(folder.json) : null;
     return {
