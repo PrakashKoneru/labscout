@@ -14,9 +14,10 @@ try {
 
 const { runSearch } = await import("../lib/search.ts");
 const { handleRpc } = await import("../lib/mcp.ts");
+const { thesisFromText } = await import("../lib/thesis.ts");
 
 const PUB = new URL("../public/", import.meta.url).pathname;
-const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".md": "text/markdown" };
+const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".mjs": "text/javascript", ".md": "text/markdown" };
 
 http.createServer(async (req, res) => {
   if (req.method === "POST" && req.url === "/api/search") {
@@ -35,6 +36,13 @@ http.createServer(async (req, res) => {
       res.writeHead(500, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: e?.message ?? String(e) }));
     }
+    return;
+  }
+  if (req.method === "POST" && req.url === "/api/thesis") {
+    let body = "";
+    for await (const ch of req) body += ch;
+    try { const b = JSON.parse(body || "{}"); const out = await thesisFromText(b.text, b.filename); res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(out)); }
+    catch (e: any) { res.writeHead(422, { "content-type": "application/json" }); res.end(JSON.stringify({ error: e?.message ?? String(e) })); }
     return;
   }
   if (req.method === "POST" && req.url === "/api/mcp") {

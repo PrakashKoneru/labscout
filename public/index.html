@@ -112,6 +112,23 @@
     .hint .k { display: none; }
     .market a { max-width: 240px; }
   }
+  .composer { flex-wrap: wrap; }
+  .composer textarea { order: 2; }
+  .composer .attach { order: 1; width: 100%; display: flex; }
+  .composer .attach[hidden] { display: none; }
+  .composer .clip { order: 3; width: 44px; height: 44px; padding: 0; flex: none; }
+  .composer .send { order: 4; }
+  .composer.drag { box-shadow: 0 0 0 4px var(--hi); background: #FBF8D6; }
+  .file-chip { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; height: 34px; padding: 0 6px 0 10px; border: var(--bw) solid var(--ink); border-radius: 6px; background: var(--hi); font: 500 12.5px/1 var(--mono); }
+  .file-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-chip .meta { color: var(--ink-2); font-weight: 400; }
+  .file-chip button { width: 24px; height: 24px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; border-radius: 4px; }
+  .file-chip button:hover { background: rgba(17,17,17,.1); }
+  .msg-u .file-chip { margin-bottom: 8px; }
+  .thesis-card { border: var(--bw) solid var(--ink); border-radius: var(--r); background: var(--sheet); padding: 16px 18px; display: grid; gap: 10px; margin-bottom: 14px; }
+  .thesis-card h3 { font: 700 20px/1.15 var(--serif); letter-spacing: -.03em; margin: 0; }
+  .thesis-card .q { font: 500 13px/1.4 var(--mono); }
+  .thesis-card .crit { display: flex; flex-wrap: wrap; gap: 6px; }
 </style>
 </head>
 <body>
@@ -129,11 +146,15 @@
       <div class="dock">
         <form class="composer" id="f">
           <label class="sr" for="q">Investment thesis or follow-up</label>
-          <textarea id="q" rows="2" autocomplete="off" placeholder="Describe your thesis…"></textarea>
+          <div class="attach" id="attach" hidden></div>
+          <textarea id="q" rows="2" autocomplete="off" placeholder="Describe your thesis, or attach it as a PDF…"></textarea>
+          <input type="file" id="file" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown" hidden>
+          <button class="btn ghost clip" id="clip" type="button" aria-label="Attach thesis file (PDF, TXT, MD)" title="Attach thesis (PDF, TXT, MD)"></button>
           <button class="btn send" id="go" type="submit" aria-label="Send"></button>
         </form>
         <div class="hint"><span class="k">Enter to send · Shift+Enter new line</span><button type="button" id="reset" hidden></button></div>
         <div class="starters" id="starters">
+          <button type="button" class="chip" id="upload-chip">Upload thesis (PDF)</button>
           <button type="button" class="chip" data-q="students working on protein design with diffusion models">Protein design + diffusion</button>
           <button type="button" class="chip" data-q="LLM agents for software engineering">LLM coding agents</button>
           <button type="button" class="chip" data-q="battery materials discovery with machine learning">ML battery materials</button>
@@ -481,7 +502,91 @@
     else if (/\b2025\b|last (12|twelve) months/.test(t)) { next.win = "2025–26"; hit = true; }
     return hit ? { kind: "filter", st: next } : null;
   }
+  /* ---------- thesis upload ---------- */
+  var fileInput = document.getElementById("file"), attachEl = document.getElementById("attach"), clipBtn = document.getElementById("clip");
+  clipBtn.innerHTML = icon("clip", 18);
+  var pending = null; // { name, size, text|null, err|null, ready: Promise }
+  var pdfjsP = null;
+  function loadPdfjs() {
+    if (!pdfjsP) pdfjsP = import("/vendor/pdfjs/pdf.min.mjs").then(function (m) { m.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.min.mjs"; return m; });
+    return pdfjsP;
+  }
+  function extractText(file) {
+    if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
+      return Promise.all([loadPdfjs(), file.arrayBuffer()]).then(function (x) {
+        return x[0].getDocument({ data: new Uint8Array(x[1]) }).promise;
+      }).then(function (doc) {
+        var pages = [], n = Math.min(doc.numPages, 30);
+        var chain = Promise.resolve();
+        for (var i = 1; i <= n; i++) (function (i) {
+          chain = chain.then(function () { return doc.getPage(i); }).then(function (pg) { return pg.getTextContent(); })
+            .then(function (tc) { pages.push(tc.items.map(function (it) { return it.str + (it.hasEOL ? "\n" : " "); }).join("")); });
+        })(i);
+        return chain.then(function () { return pages.join("\n\n"); });
+      });
+    }
+    return file.text();
+  }
+  function kb(n) { return n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB"; }
+  function fileChip(f, removable) {
+    var state = f.err ? " · " + f.err : f.text == null ? " · reading…" : " · " + f.text.split(/\s+/).filter(Boolean).length + " words";
+    return '<span class="file-chip">' + icon("paper", 14) + "<span>" + esc(f.name) + '</span><span class="meta">' + esc(kb(f.size) + state) + "</span>" +
+      (removable ? '<button type="button" data-act="unattach" aria-label="Remove attachment">' + icon("x", 14) + "</button>" : "") + "</span>";
+  }
+  function renderAttach() {
+    attachEl.hidden = !pending;
+    attachEl.innerHTML = pending ? fileChip(pending, true) : "";
+  }
+  function attach(file) {
+    if (!file) return;
+    if (file.size > 15 * 1048576) { pending = { name: file.name, size: file.size, text: null, err: "too large (max 15 MB)" }; renderAttach(); return; }
+    var f = pending = { name: file.name, size: file.size, text: null, err: null };
+    f.ready = extractText(file).then(function (t) { f.text = String(t || ""); if (f.text.trim().length < 80) f.err = "no readable text (scanned?)"; })
+      .catch(function () { f.err = "could not read file"; }).then(function () { if (pending === f) renderAttach(); return f; });
+    renderAttach();
+    input.focus();
+  }
+  clipBtn.addEventListener("click", function () { fileInput.click(); });
+  document.getElementById("upload-chip").addEventListener("click", function () { fileInput.click(); });
+  fileInput.addEventListener("change", function () { attach(fileInput.files[0]); fileInput.value = ""; });
+  attachEl.addEventListener("click", function (e) { if (e.target.closest('[data-act="unattach"]')) { pending = null; renderAttach(); } });
+  ["dragenter", "dragover"].forEach(function (ev) { document.addEventListener(ev, function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, "Files") >= 0) { e.preventDefault(); form.classList.add("drag"); } }); });
+  ["dragleave", "drop"].forEach(function (ev) { document.addEventListener(ev, function (e) { if (ev === "dragleave" && e.relatedTarget) return; form.classList.remove("drag"); }); });
+  document.addEventListener("drop", function (e) { if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) { e.preventDefault(); attach(e.dataTransfer.files[0]); } });
+
+  var MOCK_THESIS = { title: "AI-native climate and weather intelligence", query: "students building AI weather and climate emulation models", keywords: "weather emulation climate machine learning", criteria: ["Proprietary data or sensing", "Deep physical-science expertise", "Recurring vertical revenue"] };
+  function readThesis(f, note) {
+    if (MOCK_PARAM) return new Promise(function (res) { setTimeout(function () { res(MOCK_THESIS); }, 900); });
+    return fetch("/api/thesis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: (note ? "Investor note: " + note + "\n\n" : "") + f.text, filename: f.name }) })
+      .then(function (res) { return res.json().catch(function () { return {}; }).then(function (j) { if (!res.ok) throw new Error(j.error || "Could not read the thesis (HTTP " + res.status + ")"); return j; }); });
+  }
+  function sendFile(f, note) {
+    pending = null; renderAttach();
+    document.body.classList.add("has-thread"); input.rows = 1; resetBtn.hidden = false; input.value = ""; grow();
+    var u = document.createElement("div"); u.className = "msg-u settle";
+    u.innerHTML = fileChip(f, false) + (note ? "<div>" + esc(note) + "</div>" : "");
+    thread.appendChild(u); scrollToEl(u);
+    var el = addAssistant();
+    el.innerHTML = '<p class="hdr">Reading ' + esc(f.name) + ' · Nicrron</p><ol class="steps"><li class="active"><span class="ic"></span>Extracting the thesis…</li></ol>';
+    setBusy(true);
+    (f.ready || Promise.resolve(f)).then(function () {
+      if (f.err) throw new Error(f.name + ": " + f.err + ".");
+      return readThesis(f, note);
+    }).then(function (t) {
+      var card = '<div class="thesis-card settle"><span class="label">Thesis read from ' + esc(f.name) + "</span><h3>" + esc(t.title) + '</h3><div class="q">Searching: ' + esc(t.query) + "</div>" +
+        (t.criteria && t.criteria.length ? '<div class="crit">' + t.criteria.map(function (c) { return '<span class="pill">' + esc(c) + "</span>"; }).join("") + "</div>" : "") + "</div>";
+      el.innerHTML = card;
+      var res = addAssistant();
+      setBusy(false);
+      return search(t.query, res);
+    }).catch(function (err) {
+      setBusy(false);
+      el.innerHTML = '<div class="err" role="alert"><span>' + esc(err && err.message ? err.message : "Could not read the file.") + " Try a text-based PDF, or paste the thesis.</span></div>";
+    });
+  }
+
   function send(text) {
+    if (pending && !busy) { sendFile(pending, String(text || "").trim()); return; }
     text = String(text || "").trim();
     if (!text || busy) return;
     document.body.classList.add("has-thread");

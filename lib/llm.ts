@@ -22,6 +22,11 @@ async function ask(content: string, max_tokens: number, agentId = "labscout", se
   return out;
 }
 
+/** Single-shot JSON-producing call (used by the thesis reader). Traced to PRISM like every call. */
+export function askJson(content: string, agentId: string): Promise<string> {
+  return ask(content, 3000, agentId, "thesis:" + Date.now().toString(36));
+}
+
 export async function parseQuery(q: string): Promise<{ keywords: string }> {
   const text = await ask(`Turn this VC sourcing request into 2-5 search keywords for an academic paper search engine. Output ONLY the keywords separated by spaces, nothing else.\n\nRequest: ${q}`, 1500, "query-parser", sessionFor(q));
   return { keywords: text || q };
