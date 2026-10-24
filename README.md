@@ -10,7 +10,7 @@ model yet — just enough code to prove every wire works, so feature work can st
 | Frontend   | Next.js 16 App Router, React 19, TypeScript, plain CSS Modules            |
 | Backend    | Route handlers under `src/app/api/*`                                      |
 | Database   | Lakebase Postgres on Neon, via Drizzle ORM over `node-postgres`           |
-| LLM        | Anthropic SDK (`claude-sonnet-4-6`)                                       |
+| LLM        | Nicrron gateway via the OpenAI SDK, default `anthropic/claude-sonnet-5-5` |
 | Deploy     | Vercel                                                                    |
 
 The Neon project is linked through the gitignored `.neon` file, and `neon.ts` declares which Neon
@@ -24,7 +24,8 @@ neon env pull      # writes DATABASE_URL, DATABASE_URL_UNPOOLED, NEON_BRANCH int
 npm run dev
 ```
 
-`.env.local` also needs `ANTHROPIC_API_KEY`, which Neon does not manage.
+`.env.local` also needs `NICRRON_API_KEY`, which Neon does not manage. Set `NICRRON_MODEL` to
+override the default model (`anthropic/claude-sonnet-5-5`).
 
 Open the home page and use its two buttons: one writes a row to Postgres and reads it back, the
 other sends a prompt to Claude. Both go through route handlers, so a green result means the whole
@@ -51,5 +52,5 @@ neon checkout dev-my-feature --create
 
 The `pings` table (`src/db/schema.ts`), `src/app/api/pings/route.ts`, and
 `src/app/components/WiringCheck.tsx` exist only as proof of life. `src/app/api/health/route.ts` is
-worth keeping. Everything in `src/db/index.ts`, `src/lib/env.ts`, and `src/lib/anthropic.ts` is real
+worth keeping. Everything in `src/db/index.ts`, `src/lib/env.ts`, and `src/lib/llm.ts` is real
 plumbing meant to stay.

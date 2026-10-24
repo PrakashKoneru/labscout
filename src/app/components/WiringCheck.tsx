@@ -6,7 +6,8 @@ import styles from "./WiringCheck.module.css";
 type Health = {
   database: string;
   branch: string | null;
-  anthropicConfigured: boolean;
+  gatewayConfigured: boolean;
+  model: string;
 };
 
 type Ping = { id: number; note: string; createdAt: string };
@@ -74,8 +75,10 @@ export default function WiringCheck() {
         <dd>{health ? health.database : "checking…"}</dd>
         <dt>Neon branch</dt>
         <dd>{health?.branch ?? "unknown"}</dd>
-        <dt>Anthropic key</dt>
-        <dd>{health ? (health.anthropicConfigured ? "present" : "missing") : "checking…"}</dd>
+        <dt>Nicrron key</dt>
+        <dd>{health ? (health.gatewayConfigured ? "present" : "missing") : "checking…"}</dd>
+        <dt>Model</dt>
+        <dd>{health?.model ?? "unknown"}</dd>
       </dl>
 
       <div className={styles.actions}>

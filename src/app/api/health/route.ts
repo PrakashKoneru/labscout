@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "@/db";
+import { MODEL } from "@/lib/llm";
 
 export async function GET() {
   try {
@@ -7,7 +8,8 @@ export async function GET() {
     return Response.json({
       database: result.rows.length === 1 ? "reachable" : "unexpected response",
       branch: process.env.NEON_BRANCH ?? null,
-      anthropicConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
+      gatewayConfigured: Boolean(process.env.NICRRON_API_KEY),
+      model: MODEL,
     });
   } catch (reason) {
     const message = reason instanceof Error ? reason.message : "Unexpected error";
