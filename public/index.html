@@ -129,6 +129,16 @@
   .thesis-card h3 { font: 700 20px/1.15 var(--serif); letter-spacing: -.03em; margin: 0; }
   .thesis-card .q { font: 500 13px/1.4 var(--mono); }
   .thesis-card .crit { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fit { border: var(--bw) solid var(--ink); border-radius: var(--r); background: var(--sheet); padding: 12px 14px; display: grid; gap: 8px; }
+  .fit ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .fit li { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: start; font-size: 14px; line-height: 1.4; }
+  .fit li b { font-weight: 600; margin-right: 6px; }
+  .fit .v { font: 600 11px/20px var(--mono); text-transform: uppercase; letter-spacing: .08em; text-align: center; border: var(--bw) solid var(--ink); border-radius: 4px; }
+  .fit .v-yes { background: var(--ink); color: var(--sheet); }
+  .fit .v-no { color: var(--ink-3); border-color: var(--ink-3); }
+  .since { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; margin: 0 0 10px; font: 400 13px/1.5 var(--mono); }
+  .since .label { background: var(--hi); padding: 2px 6px; border-radius: 4px; }
+  .replay { font: 400 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); border: var(--bw) solid var(--ink-3); border-radius: 4px; padding: 3px 6px; }
 </style>
 </head>
 <body>
@@ -186,6 +196,7 @@
   var BUILD = ["Any", "GitHub"];
   var XS = [1, .48, .1, .88, .34, .76, .04, .6, .22, .94, .4, .7];
   var MOCK_PARAM = location.search.indexOf("mock=1") !== -1;
+  var DEMO_PARAM = /[?&]demo=1\b/.test(location.search);
 
   var replies = [];   // {data, q, st, sel, meter, mail, el, ms}
   var lastQ = "";
@@ -246,6 +257,16 @@
     roundtable: { path: "labscout/protein-design-diffusion-models.md", version: 3 },
     integrations: { nicrron: true, prism: true, akta: true, roundtable: true }
   };
+  MOCK.criteria = ["First-author on-thesis research", "Open-source builder", "Commercial or spinout intent"];
+  MOCK.changes = { prevAt: "2026-10-24T14:10:00Z", added: ["Dana Feld"], dropped: ["Lee Park"], kept: 6 };
+  MOCK.candidates[0].fit = [
+    { criterion: MOCK.criteria[0], verdict: "yes", evidence: "First author on 3 of 4 diffusion protein papers, incl. NeurIPS 2026." },
+    { criterion: MOCK.criteria[1], verdict: "yes", evidence: "mlindqvist/binder-diffusion has 1.2k GitHub stars." },
+    { criterion: MOCK.criteria[2], verdict: "yes", evidence: "NSF I-Corps team lead and a US patent application." }];
+  MOCK.candidates[1].fit = [
+    { criterion: MOCK.criteria[0], verdict: "yes", evidence: "First author, ICLR 2026 sequence-structure diffusion." },
+    { criterion: MOCK.criteria[1], verdict: "partial", evidence: "riyer/seqstruct, 640 stars; single maintainer." },
+    { criterion: MOCK.criteria[2], verdict: "yes", evidence: "Co-PI on a 2026 SBIR Phase I award." }];
 
   /* ---------- helpers ---------- */
   function link(u, text) {
@@ -378,6 +399,36 @@
       return (u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' : '<a>') + esc(n.title) + "<span>" + esc([n.publisher, n.publishedDate ? String(n.publishedDate).slice(0, 10) : ""].filter(Boolean).join(" · ")) + "</span></a>";
     }).join("") + "</div>";
   }
+  function fitBlock(c) {
+    var f = c.fit || [];
+    if (!f.length) return "";
+    var yes = f.filter(function (x) { return x.verdict === "yes"; }).length;
+    return '<div class="fit"><span class="label">Fit vs your thesis · ' + yes + "/" + f.length + "</span><ul>" + f.map(function (x) {
+      return '<li><span class="v v-' + esc(x.verdict) + '">' + esc(x.verdict === "partial" ? "part" : x.verdict) + "</span><span><b>" + esc(x.criterion) + "</b>" + esc(x.evidence) + "</span></li>";
+    }).join("") + "</ul></div>";
+  }
+  function hhmm(iso) { var t = iso ? new Date(iso) : null; return t && !isNaN(t) ? t.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""; }
+  function replayTag(d) {
+    if (!d.replay) return "";
+    return '<span class="replay">' + (d.replay.fallback ? "live search failed · " : "") + "snapshot " + esc(hhmm(d.replay.savedAt)) + "</span>";
+  }
+  function changesLine(d) {
+    var ch = d.changes;
+    if (!ch) return "";
+    var when = ch.prevAt ? new Date(ch.prevAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "last run";
+    var body = !ch.added.length && !ch.dropped.length ? "No change · " + ch.kept + " kept"
+      : (ch.added.length ? "<b>+" + ch.added.length + " new</b> " + esc(ch.added.map(short).join(", ")) : "") +
+        (ch.dropped.length ? (ch.added.length ? " · " : "") + "−" + ch.dropped.length + " dropped" : "") + " · " + ch.kept + " kept";
+    return '<p class="since"><span class="label">Since ' + esc(when) + "</span><span>" + body + "</span></p>";
+  }
+  function exportMemo(r) {
+    var w = window.open("", "_blank"); // open synchronously inside the click so popup blockers allow it
+    if (!w) return;
+    w.document.title = "Labscout memo";
+    import("/assets/memo.js").then(function (m) {
+      w.document.open(); w.document.write(m.memoHtml(r.data, r.list || apply(r), r.data.criteria || [])); w.document.close();
+    }).catch(function () { w.close(); });
+  }
   function openCard(r, c, rank) {
     var md = meterData(c);
     var pills = (c.institutions || []).map(function (n) { return '<span class="pill">' + esc(n) + "</span>"; }).join("");
@@ -391,6 +442,7 @@
         '<div class="mom">' + momentum(c) + '<button type="button" class="btn hi" data-act="reach">Reach out</button></div></div>' +
       (r.mail === rank ? '<div class="mail"><pre>' + esc(emailText(c, r.data.keywords || r.q)) + '<button type="button" class="copy-btn" data-act="copymail"><span>Copy email</span></button></pre></div>' : "") +
       (c.brief ? '<p class="brief">' + esc(c.brief) + "</p>" : "") +
+      fitBlock(c) +
       '<div class="meters">' + md.map(function (m, i) {
         return '<button type="button" class="meter' + (m.dark ? " dark" : "") + '" data-act="meter" data-k="' + i + '" aria-pressed="' + (r.meter === i) + '" title="' + esc(m.pts) + ' signal points · show evidence"><span class="label">' + esc(m.label) + '</span><span class="sqs">' + sqs(m.pts) + "</span></button>";
       }).join("") + "</div>" +
@@ -408,8 +460,8 @@
     if (r.sel >= list.length) r.sel = 0;
     var total = (d.candidates || []).length;
     var hdr = '<p class="hdr"><span><b>' + esc(d.totalWorks == null ? 0 : d.totalWorks) + "</b> papers → <b>" + total + "</b> students" + (r.ms ? " · " + (r.ms / 1000).toFixed(1) + " s" : "") + "</span>" +
-      (list.length !== total ? "<span>showing " + list.length + "</span>" : "") + "<span>“" + esc(d.keywords || r.q) + "”</span></p>";
-    var html = hdr + filtersRow(r) + marketStrip(d);
+      (list.length !== total ? "<span>showing " + list.length + "</span>" : "") + "<span>“" + esc(d.keywords || r.q) + "”</span>" + replayTag(d) + "</p>";
+    var html = hdr + changesLine(d) + filtersRow(r) + marketStrip(d);
     if (!list.length) {
       html += '<div class="empty">No students match these filters. Clear a filter above or try a broader thesis.</div>';
     } else {
@@ -430,6 +482,7 @@
     after.push('<div class="integ">' + [["Nicrron", ig.nicrron], ["PRISM", ig.prism], ["akta.pro", ig.akta], ["Roundtable", ig.roundtable]].map(function (x) {
       return '<span><i class="dot' + (x[1] ? " ok" : "") + '"></i>' + x[0] + (x[1] ? "" : " off") + "</span>";
     }).join("") + "</div>");
+    after.push('<div><button type="button" class="btn ghost" data-act="memo">' + icon("paper", 14) + "<span>Export partner memo</span></button></div>");
     var sugg = ["Only current students", "Only Columbia", "Top 3", "With GitHub", "More like #1", "Email #1"];
     after.push('<div class="next">' + sugg.map(function (s) { return '<button type="button" class="chip" data-say="' + esc(s) + '">' + esc(s) + "</button>"; }).join("") + "</div>");
     html += '<div class="after">' + after.join("") + "</div>";
@@ -455,25 +508,57 @@
     var t = setInterval(function () { if (i < STEPS.length - 1) { i++; draw(); } }, 3000);
     return function () { clearInterval(t); i = STEPS.length; draw(); };
   }
-  function fetchSearch(q) {
-    if (MOCK_PARAM) return new Promise(function (res) { setTimeout(function () { res(JSON.parse(JSON.stringify(MOCK))); }, 1600); });
-    return fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ q: q }) })
+  /* ---------- demo snapshots (public/demo/demo.json, written by scripts/snapshot.ts) ---------- */
+  var snapP = null;
+  function snapshots() {
+    if (!snapP) snapP = Promise.all([
+      import("/assets/snap.js"),
+      fetch("/demo/demo.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+    ]).then(function (x) { return { key: x[0].snapKey, data: x[1] }; }).catch(function () { return { key: null, data: null }; });
+    return snapP;
+  }
+  function fromSnapshot(kind, k, fallback) {
+    return snapshots().then(function (s) {
+      var d = s.data, id = kind === "search" ? (s.key ? s.key(k[0], k[1]) : null) : k;
+      var hit = d && id != null && d[kind] && d[kind][id];
+      if (!hit) return null;
+      var out = JSON.parse(JSON.stringify(hit));
+      if (kind === "search") out.replay = { savedAt: d.savedAt || null, fallback: !!fallback };
+      return out;
+    });
+  }
+  function wait(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
+  function postJson(url, body, ms) {
+    var ctl = new AbortController(), timer = setTimeout(function () { ctl.abort(); }, ms);
+    return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: ctl.signal })
       .then(function (res) {
         return res.json().catch(function () { return {}; }).then(function (j) {
           if (!res.ok) throw new Error(j.error || ("Request failed (HTTP " + res.status + ")"));
           return j;
         });
-      });
+      }, function (e) { throw new Error(e && e.name === "AbortError" ? "Timed out after " + Math.round(ms / 1000) + " s." : "Network error."); })
+      .finally(function () { clearTimeout(timer); });
+  }
+  /** ?demo=1 replays a snapshot when one exists; otherwise go live and fall back to a snapshot on failure. */
+  function withSnapshot(kind, k, live) {
+    if (DEMO_PARAM) return fromSnapshot(kind, k, false).then(function (hit) { return hit ? wait(kind === "search" ? 2500 : 900).then(function () { return hit; }) : live(); });
+    return live().catch(function (err) { return fromSnapshot(kind, k, true).then(function (hit) { if (hit) return hit; throw err; }); });
+  }
+  function fetchSearch(q, criteria) {
+    if (MOCK_PARAM) return new Promise(function (res) { setTimeout(function () { res(JSON.parse(JSON.stringify(MOCK))); }, 1600); });
+    return withSnapshot("search", [q, criteria], function () { return postJson("/api/search", { q: q, criteria: criteria }, 58000); });
   }
   var rid = 0;
-  function search(q, el) {
+  function search(q, el, criteria) {
     el = el || addAssistant();
+    criteria = criteria || [];
+    el.crit = criteria;
     var stop = progress(el), t0 = performance.now();
     setBusy(true);
-    return fetchSearch(q).then(function (data) {
+    return fetchSearch(q, criteria).then(function (data) {
       stop();
       lastQ = q;
-      var r = { id: ++rid, data: data, q: q, st: defaults(), sel: 0, meter: null, mail: null, el: el, ms: data.tookMs || (performance.now() - t0) };
+      var r = { id: ++rid, data: data, q: q, criteria: criteria, st: defaults(), sel: 0, meter: null, mail: null, el: el, ms: data.tookMs || (performance.now() - t0) };
       replies.push(r);
       el.setAttribute("data-r", replies.length - 1);
       renderDrawer(r);
@@ -558,8 +643,9 @@
   var MOCK_THESIS = { title: "AI-native climate and weather intelligence", query: "students building AI weather and climate emulation models", keywords: "weather emulation climate machine learning", criteria: ["Proprietary data or sensing", "Deep physical-science expertise", "Recurring vertical revenue"] };
   function readThesis(f, note) {
     if (MOCK_PARAM) return new Promise(function (res) { setTimeout(function () { res(MOCK_THESIS); }, 900); });
-    return fetch("/api/thesis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: (note ? "Investor note: " + note + "\n\n" : "") + f.text, filename: f.name }) })
-      .then(function (res) { return res.json().catch(function () { return {}; }).then(function (j) { if (!res.ok) throw new Error(j.error || "Could not read the thesis (HTTP " + res.status + ")"); return j; }); });
+    return withSnapshot("thesis", f.name, function () {
+      return postJson("/api/thesis", { text: (note ? "Investor note: " + note + "\n\n" : "") + f.text, filename: f.name }, 30000);
+    });
   }
   function sendFile(f, note) {
     pending = null; renderAttach();
@@ -579,7 +665,7 @@
       el.innerHTML = card;
       var res = addAssistant();
       setBusy(false);
-      return search(t.query, res);
+      return search(t.query, res, t.criteria || []);
     }).catch(function (err) {
       setBusy(false);
       el.innerHTML = '<div class="err" role="alert"><span>' + esc(err && err.message ? err.message : "Could not read the file.") + " Try a text-based PDF, or paste the thesis.</span></div>";
@@ -598,7 +684,7 @@
     var f = parseFollow(text), prev = latest();
     if (f && f.kind === "filter") {
       var el = addAssistant();
-      var r = { id: ++rid, data: prev.data, q: prev.q, st: f.st, sel: 0, meter: null, mail: null, el: el, ms: 0 };
+      var r = { id: ++rid, data: prev.data, q: prev.q, criteria: prev.criteria || [], st: f.st, sel: 0, meter: null, mail: null, el: el, ms: 0 };
       replies.push(r); el.setAttribute("data-r", replies.length - 1);
       renderDrawer(r);
     } else if (f && (f.kind === "email" || f.kind === "more")) {
@@ -609,7 +695,7 @@
         addAssistant().innerHTML = '<p class="hdr">Intro email · <b>' + esc(c.name) + '</b></p><div class="mail"><pre data-mail="1">' + esc(emailText(c, prev.data.keywords || prev.q)) + '<button type="button" class="copy-btn" data-act="copyplain"><span>Copy email</span></button></pre></div>';
       } else {
         var titles = (c.works || []).slice(0, 3).map(function (w) { return w.title; }).join("; ");
-        search(prev.q + "; similar to: " + titles);
+        search(prev.q + "; similar to: " + titles, null, prev.criteria || []);
       }
     } else {
       search(text);
@@ -626,7 +712,7 @@
     var t = e.target.closest("button");
     if (!t) return;
     var retry = t.getAttribute("data-retry");
-    if (retry != null) { if (!busy) search(retry, t.closest(".msg-a")); return; }
+    if (retry != null) { var host0 = t.closest(".msg-a"); if (!busy) search(retry, host0, host0.crit || []); return; }
     var say = t.getAttribute("data-say");
     if (say) { send(say); return; }
     var act = t.getAttribute("data-act");
@@ -646,6 +732,7 @@
     else if (act === "reach") r.mail = r.mail === r.sel ? null : r.sel;
     else if (act === "copybrief") { if (c) copy(copyText(c), t, "Copy brief"); return; }
     else if (act === "copymail") { if (c) copy(emailText(c, r.data.keywords || r.q), t, "Copy email"); return; }
+    else if (act === "memo") { exportMemo(r); return; }
     else return;
     if (/school|status|build|win|sort|top/.test(act)) { r.sel = 0; r.meter = null; r.mail = null; }
     var focusAct = act, focusK = t.getAttribute("data-k");
