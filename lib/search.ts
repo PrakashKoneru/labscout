@@ -12,17 +12,25 @@ import type { Candidate, SearchResponse } from "./types.ts";
 
 const cache = new Map<string, SearchResponse>();
 
-const SOURCE_TIMEOUT_MS = 15000;
+// Per-wave budgets: 14 s + 9 s keeps signal collection well inside the 60 s function limit.
+const WAVE_TIMEOUT_MS = { 1: 14000, 2: 9000 } as const;
 
-/** Runs every enabled source on every candidate in parallel. One source can never break or stall the search. */
+/** Runs every enabled source on every candidate in parallel, in two waves (wave 2 may read wave-1 signals).
+ *  One source can never break or stall the search. */
 export async function collectSignals(cands: Candidate[], ctx: SourceContext, sources: SourceModule[] = SOURCES): Promise<void> {
   const active = sources.filter((s) => { try { return s.enabled(); } catch { return false; } });
+  await runWave(cands, ctx, active.filter((s) => (s.wave ?? 1) === 1), WAVE_TIMEOUT_MS[1]);
+  await runWave(cands, ctx, active.filter((s) => s.wave === 2), WAVE_TIMEOUT_MS[2]);
+}
+
+async function runWave(cands: Candidate[], ctx: SourceContext, active: SourceModule[], timeoutMs: number): Promise<void> {
+  if (!active.length) return;
   await Promise.all(cands.flatMap((c) => {
     c.signals ??= [];
     return active.map(async (s) => {
       let timer: ReturnType<typeof setTimeout> | undefined;
       try {
-        const timeout = new Promise<Signal[]>((resolve) => { timer = setTimeout(() => resolve([]), SOURCE_TIMEOUT_MS); });
+        const timeout = new Promise<Signal[]>((resolve) => { timer = setTimeout(() => resolve([]), timeoutMs); });
         const out = await Promise.race([s.enrich(c, ctx), timeout]);
         if (Array.isArray(out)) c.signals.push(...out.filter((x) => x && typeof x.label === "string"));
       } catch { /* source failures are non-fatal */ } finally { clearTimeout(timer); }

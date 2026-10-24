@@ -2,7 +2,16 @@
 // Stages: 1 research quality, 2 builder signal, 3 commercial pull, 4 spinout intent, 5 early traction, 6 track record.
 import type { Candidate } from "../types.ts";
 
-export type SourceId = "github" | "arxiv" | "semanticscholar" | "nsf" | "patentsview" | "sbir";
+export type SourceId =
+  | "github" | "arxiv" | "semanticscholar" | "nsf" | "patentsview" | "sbir"
+  // builder
+  | "huggingface" | "packages" | "zenodo"
+  // academic / identity
+  | "crossref" | "orcid" | "europepmc" | "cordis" | "wikidata" | "dissertations" | "nih"
+  // entity formation / money
+  | "nycorp" | "edgar" | "usaspending" | "clinicaltrials" | "yc"
+  // social / launch
+  | "bluesky" | "hackernews";
 
 export type Signal = {
   source: SourceId;
@@ -18,6 +27,9 @@ export type SourceContext = { query: string; keywords: string };
 
 export type SourceModule = {
   id: SourceId;
+  /** Wave 1 (default) runs all sources in parallel. Wave 2 runs after wave 1 completes and may read
+   *  `c.signals` already collected (e.g. GitHub login / repo names, Hugging Face username) to derive queries. */
+  wave?: 1 | 2;
   enabled(): boolean;                                   // false when a required key is missing
   enrich(c: Candidate, ctx: SourceContext): Promise<Signal[]>; // must never throw; return [] on any failure; 15 s budget
 };
