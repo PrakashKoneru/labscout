@@ -7,13 +7,13 @@ export default function LoadingCabinet() {
       <picture>
         <source
           media="(prefers-reduced-motion: reduce)"
-          srcSet="/loading-cabinet-seamless.png"
+          srcSet="/loading-cabinet-clear.png"
           type="image/png"
         />
         {/* An unoptimized image preserves the GIF's successive folder animation. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/loading-cabinet-seamless.gif"
+          src="/loading-cabinet-clear.gif"
           width={600}
           height={500}
           alt="Illustrated Full Signal filing cabinet, riffling through research, patents, grants, and people."
