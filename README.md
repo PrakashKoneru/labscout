@@ -12,6 +12,9 @@ Built at **Deal Flow — NYC's first VC hackathon** (Betaworks, October 24, 2026
 - **Search:** OpenAlex works search, filtered to Columbia / NYU / Cornell / Cornell Tech, publication years 2024–26.
 - **Enrich:** per-author aggregation of matching papers + OpenAlex author stats + ORCID education check (an education entry with no end date = current student).
 - **Rank & brief:** deterministic score, then a 3-line brief per student with links to every source paper.
+- **Thesis fit:** upload your fund's thesis (PDF/TXT/MD). Labscout pulls up to 4 criteria from it and checks every student against each: yes / partial / no, with the evidence line. Fit points show in the score breakdown.
+- **Since last run:** every shortlist is versioned in Roundtable; re-running a thesis shows who is new and who dropped.
+- **Partner memo:** one click turns the current shortlist into a printable one-page memo with source links.
 
 ## Data sources
 
@@ -28,6 +31,8 @@ Built at **Deal Flow — NYC's first VC hackathon** (Betaworks, October 24, 2026
 4. Hackathon tab data: `node scripts/hackathon.ts` re-pulls the attendee sheet, runs every attendee through the signal sources (resumable cache in `.cache/`) and writes `public/data/hackathon.json`. Flags: `--fresh`, `--briefs N`, `--openalex`, `--limit N`.
 
 Offline demo of the UI: open `/index.html?mock=1` (uses a built-in sample response, no API calls).
+
+Demo mode: `/?demo=1` replays real production responses recorded by `node scripts/snapshot.ts`. A failed live search falls back to the snapshot, labeled "snapshot HH:MM".
 
 ## Stack
 

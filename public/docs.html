@@ -174,14 +174,15 @@
       <article class="sheet card">
         <div class="card-h"><span data-i="code" data-s="20"></span><h3 class="h2">REST</h3><span class="pill">POST</span></div>
         <code class="url">https://labscout-nyc.vercel.app/api/search</code>
-        <pre data-copy="curl -s -X POST https://labscout-nyc.vercel.app/api/search -H 'content-type: application/json' -d '{&quot;q&quot;:&quot;AI for drug discovery&quot;}'">curl -s -X POST https://labscout-nyc.vercel.app/api/search \
+        <pre data-copy="curl -s -X POST https://labscout-nyc.vercel.app/api/search -H 'content-type: application/json' -d '{&quot;q&quot;:&quot;AI for drug discovery&quot;,&quot;criteria&quot;:[&quot;open-source builder&quot;]}'">curl -s -X POST https://labscout-nyc.vercel.app/api/search \
   -H 'content-type: application/json' \
-  -d '{"q":"AI for drug discovery"}'</pre>
+  -d '{"q":"AI for drug discovery","criteria":["open-source builder"]}'</pre>
         <pre>{ "keywords": "drug discovery machine learning",
   "candidates": [{ "name", "score", "reasons", "brief",
-    "isCurrentStudent", "works", "signals", "orcid" }],
+    "isCurrentStudent", "works", "signals", "fit", "orcid" }],
   "market": [{ "title", "url", "summary" }],
   "roundtable": { "path", "version" },
+  "changes": { "added", "dropped", "kept", "prevAt" },
   "integrations": { "nicrron", "prism", "akta", "roundtable" } }</pre>
       </article>
 
