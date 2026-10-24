@@ -3,222 +3,315 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Labscout — Team guide: usage, sponsors, API &amp; MCP</title>
+<title>Labscout — Architecture &amp; API</title>
+<meta name="description" content="How Labscout works: architecture, founder-signal sources, ranking, REST API and MCP endpoint.">
+<link rel="preload" href="/fonts/instrument-serif-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/labscout.css">
 <style>
-  :root { --fg:#111; --muted:#666; --line:#e5e5e5; --soft:#f6f6f6; --green:#137333; }
-  * { box-sizing: border-box; }
-  body { margin: 0; color: var(--fg); font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  main { max-width: 820px; padding: 32px 24px 80px; }
-  h1 { font-size: 28px; margin: 0 0 4px; }
-  h2 { font-size: 20px; margin: 40px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
-  h3 { font-size: 16px; margin: 22px 0 6px; }
-  p, li { max-width: 72ch; }
-  a { color: inherit; }
-  .muted, .meta { color: var(--muted); }
-  nav { margin: 16px 0 8px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; }
-  code { background: var(--soft); padding: 1px 5px; border-radius: 3px; font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
-  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; position: relative; }
-  pre code { background: none; padding: 0; }
-  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0; }
-  th, td { text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); padding: 8px 10px 8px 0; }
-  th { font-weight: 600; }
-  .pill { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 10px; background: #e6f4ea; color: var(--green); font-weight: 600; }
-  .note { border-left: 3px solid var(--fg); padding: 4px 12px; margin: 12px 0; background: var(--soft); }
-  .copy { position: absolute; top: 6px; right: 6px; font: 12px system-ui; border: 1px solid var(--line); background: #fff; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
-  ol li, ul li { margin: 4px 0; }
+  .facts { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* architecture diagram: dark = Labscout code, outlined = external, yellow = sponsor */
+  .arch { margin-top: 22px; padding: 28px; display: grid; grid-template-columns: minmax(0, .8fr) 28px minmax(0, .9fr) 28px minmax(0, .9fr) 28px minmax(0, 1.9fr); align-items: center; }
+  .col { display: flex; flex-direction: column; gap: 8px; }
+  .col > .label { margin: 0 0 2px; }
+  .node { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: var(--bw) solid var(--ink); border-radius: var(--r); background: var(--sheet); font: 500 12.5px/1.2 var(--mono); }
+  .node svg { flex: none; }
+  .node.own { background: var(--dark); color: var(--on-dark); border-color: var(--dark); }
+  .node.own code { font-size: 12.5px; }
+  .node.core { flex-direction: column; align-items: flex-start; gap: 6px; padding: 18px 16px; }
+  .node.core code { font-size: 14px; font-weight: 600; }
+  .node.core span { font: 400 12px/1.4 var(--sans); color: var(--on-dark-2); }
+  .link { display: grid; place-items: center; }
+  .link svg { width: 20px; height: 20px; }
+  .fan { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grp { border: var(--bw) solid var(--ink); border-radius: var(--r); padding: 12px; background: var(--paper); }
+  .grp.wide { grid-column: 1 / -1; }
+  .grp .label { margin: 0 0 8px; }
+  .grp.own-grp { background: var(--sheet); }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill b { font-weight: 400; margin-left: 1px; }
+  .note { margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font: 400 12px/1.3 var(--mono); color: var(--ink-2); }
+  .note span { display: inline-flex; align-items: center; gap: 8px; }
+  .sw { width: 14px; height: 14px; border: var(--bw) solid var(--ink); border-radius: 3px; display: inline-block; }
+  .sw.d { background: var(--dark); } .sw.h { background: var(--hi); }
+
+  /* stage meter, 6 cells */
+  .meters.six { grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--sheet); }
+  .meters.six .meter { align-content: start; gap: 12px; padding: 14px; }
+  .meter .n { font: 700 34px/1 var(--sans); letter-spacing: -.04em; }
+  .meter .road { margin: 0; font-size: 12.5px; color: var(--ink-3); line-height: 1.4; }
+  .meter.dark { color: var(--on-dark); }
+  .meter.dark .road { color: var(--on-dark-2); }
+  .meter.dark .pill { color: var(--on-dark); border-color: var(--on-dark); }
+  .meter.dark .pill.ok { color: var(--ok); border-color: var(--ok); }
+  .meter .none { font-size: 12.5px; color: var(--ink-3); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; font-size: 13px; color: var(--ink-3); }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+
+  /* ranking */
+  .rank { max-width: 760px; background: transparent; }
+  .rank td.num { white-space: nowrap; font-weight: 600; text-align: right; width: 130px; padding-right: 0; }
+  .rank th:last-child { text-align: right; padding-right: 0; }
+  .rank td.src { font: 400 12px/1.5 var(--mono); color: var(--ink-2); }
+
+  /* API panels */
+  .api { margin-top: 22px; align-items: start; }
+  .card { padding: 22px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .card-h { display: flex; align-items: center; gap: 10px; }
+  .card-h .h2 { margin: 0; }
+  .card-h .pill { margin-left: auto; }
+  .url { font-size: 13px; word-break: break-all; padding: 8px 10px; border: var(--bw) solid var(--ink); border-radius: 4px; background: var(--paper); }
+  .card > p { margin: 0; color: var(--ink-2); font-size: 14px; }
+  .seg { display: inline-flex; flex-wrap: wrap; gap: 6px; align-self: flex-start; }
+  .seg button { height: 30px; padding: 0 12px; border: var(--bw) solid var(--ink); border-radius: 999px; background: transparent; color: var(--ink); font: 500 12px/1 var(--mono); cursor: pointer; }
+  .seg button:hover { background: var(--paper); }
+  .seg button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+  .panel[hidden] { display: none; }
+  pre[data-copy] { padding-top: 40px; }
+  .ping { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+  .ping-out { color: var(--ink-2); display: inline-flex; align-items: center; gap: 8px; }
+  .ping-out.err { color: var(--bad); }
+
+  /* run locally */
+  .run { margin-top: 22px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+  .fmap { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 0 18px; font-size: 14px; border-top: var(--bw) solid var(--ink); }
+  .fmap dt, .fmap dd { padding: 9px 0; border-bottom: 1px solid var(--hair); margin: 0; }
+  .fmap dd { color: var(--ink-2); }
+  .ethics { margin-top: 64px; display: flex; justify-content: center; }
+
+  @media (max-width: 960px) {
+    .arch { grid-template-columns: 1fr; gap: 8px; }
+    .link svg { transform: rotate(90deg); }
+    .col { flex-direction: row; flex-wrap: wrap; }
+    .col > .label { width: 100%; }
+    .col > .node { flex: 1 1 140px; }
+    .meters.six { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .meters.six .meter { border-bottom: var(--bw) solid var(--ink); }
+    .meters.six .meter:nth-child(3n) { border-right: 0; }
+    .meters.six .meter:nth-child(n+4) { border-bottom: 0; }
+    .run { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 620px) {
+    .arch { padding: 18px; }
+    .fan { grid-template-columns: 1fr; }
+    .meters.six { grid-template-columns: 1fr; }
+    .meters.six .meter, .meters.six .meter:nth-child(3n), .meters.six .meter:nth-child(2) { border-right: 0; border-bottom: var(--bw) solid var(--ink); }
+    .meters.six .meter:last-child { border-bottom: 0; }
+    .fmap { grid-template-columns: 1fr; }
+    .fmap dt { border-bottom: 0; padding-bottom: 0; }
+    .ethics .tag-hi { height: auto; padding: 8px 12px; line-height: 1.4; text-align: center; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <h1>Labscout team guide</h1>
-  <p class="muted">PitchBook for students. Team 9, Deal Flow NYC VC Hackathon, Track 1: Sourcing. Everything below is live.</p>
-  <nav>
-    <a href="#use">1. Use the product</a>
-    <a href="#sponsors">2. How we use the sponsors</a>
-    <a href="#api">3. REST API</a>
-    <a href="#mcp">4. MCP endpoint</a>
-    <a href="#accounts">5. Sponsor dashboards &amp; access</a>
-    <a href="#dev">6. Run &amp; change the code</a>
-    <a href="#demo">7. Demo script</a>
-    <a href="/sponsors"><strong>Sponsors, live →</strong></a>
-  </nav>
+<div id="ls-top"></div>
+<main class="page">
+<div class="wrap">
 
-  <table>
-    <tr><th>App</th><td><a href="/">labscout-nyc.vercel.app</a></td></tr>
-    <tr><th>Sponsors live</th><td><a href="/sponsors">/sponsors</a>: live status of all four sponsors, pipeline diagram, try-a-search timeline (backed by <code>GET /api/status</code>)</td></tr>
-    <tr><th>REST API</th><td><code>POST https://labscout-nyc.vercel.app/api/search</code></td></tr>
-    <tr><th>MCP</th><td><code>https://labscout-nyc.vercel.app/api/mcp</code> (Streamable HTTP, no auth)</td></tr>
-    <tr><th>Repo</th><td><a href="https://github.com/jakdemir/labscout">github.com/jakdemir/labscout</a></td></tr>
-    <tr><th>Offline demo</th><td><a href="/?mock=1">/?mock=1</a> renders canned results if the Wi-Fi dies</td></tr>
-  </table>
+  <header>
+    <h1 class="h-display">How Labscout <em>works</em>.</h1>
+    <p class="lead">One orchestrator, nine data sources, four sponsors. Same JSON for app, API and agents.</p>
+    <div class="facts">
+      <span class="pill">0 npm dependencies</span>
+      <span class="pill">No build step</span>
+      <span class="pill">10–20 s per search</span>
+      <span class="pill">Every step fails safe</span>
+    </div>
+  </header>
 
-  <!-- 1 -->
-  <h2 id="use">1. Use the product</h2>
-  <ol>
-    <li>Open <a href="/">the app</a>. Type the fund's thesis in plain English, for example <em>"students working on protein design with diffusion models"</em>, or click one of the example chips.</li>
-    <li>Click <strong>Find students</strong>. It takes 10–20 seconds. The progress line shows each stage: reading the thesis, searching OpenAlex and akta.pro, checking ORCID, writing briefs, saving to Roundtable.</li>
-    <li>Read the results, top to bottom:
-      <ul>
-        <li><strong>Market pull</strong> panel: recent news on the thesis from akta.pro, with AI summaries. This answers "is the market moving?"</li>
-        <li><strong>Ranked cards</strong>, one per student: name, school, and a green <span class="pill">Current student</span> badge when ORCID confirms an education entry with no end date. "Unverified" means there was no ORCID data. It doesn't mean they're not a student.</li>
-        <li>A <strong>3-line brief</strong>: what they published, why it fits the thesis, and the one question to ask them.</li>
-        <li><strong>Evidence</strong>: up to 3 matching papers (author position, year, venue, link). Footer links go to OpenAlex and ORCID. Hover over <code>score ⓘ</code> to see exactly how the rank was computed.</li>
-        <li><strong>Press mentions</strong> (akta.pro) appear only when an article names the student <em>and</em> their university or a thesis keyword. That filter keeps out people with the same name.</li>
-      </ul>
-    </li>
-    <li><strong>Copy brief</strong> on any card puts a forwardable text with sources on the clipboard. Paste it into an email to a partner.</li>
-    <li>The bottom line shows where the shortlist was saved in Roundtable, plus a <code>● Nicrron ● PRISM ● akta.pro ● Roundtable</code> status row. A filled dot means that integration ran.</li>
-  </ol>
+  <section class="section" aria-labelledby="h-arch">
+    <h2 class="h2" id="h-arch">Architecture</h2>
+    <p>Three clients, three functions, one pipeline fanning out in parallel.</p>
+    <div class="sheet lift arch" id="arch" role="img" aria-label="Clients call Vercel functions, which run lib/search.ts. It fans out to research data, signal plugins and four sponsors.">
+      <div class="col">
+        <p class="label">Clients</p>
+        <div class="node" data-i="chat">Browser</div>
+        <div class="node" data-i="spark">MCP client</div>
+        <div class="node" data-i="code">REST client</div>
+      </div>
+      <div class="link" data-i="arrow"></div>
+      <div class="col">
+        <p class="label">Vercel functions</p>
+        <div class="node own"><code>api/search.ts</code></div>
+        <div class="node own"><code>api/mcp.ts</code></div>
+        <div class="node own"><code>api/status.ts</code></div>
+      </div>
+      <div class="link" data-i="arrow"></div>
+      <div class="col">
+        <p class="label">Orchestrator</p>
+        <div class="node own core"><code>lib/search.ts</code><span>keywords → papers → signals → rank → briefs</span></div>
+      </div>
+      <div class="link" data-i="arrow"></div>
+      <div class="fan">
+        <div class="grp"><p class="label">Research data</p><div class="tags"><span class="pill ok">OpenAlex</span><span class="pill ok">ORCID</span></div></div>
+        <div class="grp"><p class="label">LLM</p><div class="tags"><span class="pill hi">NicrronNinoo</span></div></div>
+        <div class="grp wide"><p class="label">Signal plugins · lib/sources/*</p><div class="tags">
+          <span class="pill ok">GitHub</span><span class="pill ok">arXiv</span><span class="pill ok">Semantic Scholar</span><span class="pill ok">NSF</span><span class="pill">PatentsView<b>*</b></span><span class="pill">SBIR<b>*</b></span></div></div>
+        <div class="grp"><p class="label">News</p><div class="tags"><span class="pill hi">akta.pro</span></div></div>
+        <div class="grp"><p class="label">Store + traces</p><div class="tags"><span class="pill hi">Roundtable</span><span class="pill hi">PRISM</span></div></div>
+      </div>
+    </div>
+    <p class="note"><span><i class="sw d"></i>Labscout code</span><span><i class="sw"></i>External service</span><span><i class="sw h"></i>Sponsor</span><span><i class="dot ok"></i>Live public API</span><span>* Built, upstream paused</span></p>
+  </section>
 
-  <h3>How the ranking works</h3>
-  <ul>
-    <li>+10 for each matching paper as first author, +3 as a middle author, +1 as last author. Plus up to +5 for citations and +2 if published in 2025 or later.</li>
-    <li>+15 for a student confirmed by ORCID, −15 when ORCID shows their education has ended.</li>
-    <li><strong>Momentum</strong>: up to +10, based on the share of the author's papers from the last two years. Recent growth counts more than a long career total.</li>
-    <li>Penalties for established researchers (more than 30 papers, or publishing since before 2018). This keeps faculty below students.</li>
-  </ul>
-  <p class="muted">Coverage: Columbia, NYU, Cornell and Cornell Tech; papers from 2024–26. The list of schools is in <code>lib/institutions.ts</code>.</p>
+  <section class="section" aria-labelledby="h-sig">
+    <h2 class="h2" id="h-sig">Founder signals</h2>
+    <p>Six stages, earliest first. Stage 4 is the strongest signal.</p>
+    <div class="meters six" id="ladder" role="list"></div>
+    <div class="legend"><span><span class="pill ok">Live</span></span><span><span class="pill">Needs key or paused</span></span><span>Grey text: roadmap</span></div>
+  </section>
 
-  <h3>Queries that demo well</h3>
-  <p><code>protein design with diffusion models</code> · <code>LLM agents for software engineering</code> · <code>battery materials discovery with machine learning</code> · <code>AI for drug discovery</code> · <code>quantum computing error correction</code> · <code>AI chips and hardware accelerators</code></p>
+  <section class="section" aria-labelledby="h-rank">
+    <h2 class="h2" id="h-rank">How a student is ranked</h2>
+    <p>Deterministic points. Every reason ships with the result.</p>
+    <table class="t rank" id="rank"><thead><tr><th>Rule</th><th>Source</th><th style="text-align:right">Points</th></tr></thead><tbody></tbody></table>
+  </section>
 
-  <!-- 2 -->
-  <h2 id="sponsors">2. How we use the sponsors</h2>
-  <p>All four required sponsors run on every search. The status row under the results shows which ones ran.</p>
-  <table>
-    <tr><th>Sponsor</th><th>What it does in Labscout</th><th>Code</th></tr>
-    <tr><td><strong>NicrronNinoo</strong></td>
-      <td>All LLM work goes through the Nicrron gateway (model <code>anthropic/claude-haiku-5-5</code>). It turns the thesis into search keywords and writes the 3-line brief for each top-10 student.</td>
-      <td><code>lib/llm.ts</code></td></tr>
-    <tr><td><strong>PRISM by Block Convey</strong></td>
-      <td>Every model call is traced to PRISM, plus one summary trace per search. All traces from one search share a <code>session_id</code> (<code>search:&lt;query&gt;</code>), so the whole run appears as one conversation. Agents: <code>query-parser</code>, <code>brief-writer</code>, <code>search-orchestrator</code>.</td>
-      <td><code>lib/prism.ts</code></td></tr>
-    <tr><td><strong>akta.pro by Wokelo AI</strong></td>
-      <td>News Signals API. (1) The <em>Market pull</em> panel: topic news on the thesis keywords, with AI summaries, sentiment and the companies mentioned. (2) <em>Press mentions</em>: a person search on each top-5 student, filtered by university or thesis keyword. This is our entry for Best Use of External Data.</td>
-      <td><code>lib/akta.ts</code></td></tr>
-    <tr><td><strong>Roundtable</strong></td>
-      <td>Each search writes a versioned markdown shortlist (brief, evidence, score reasons, links) to <code>labscout/&lt;query-slug&gt;.md</code> through Roundtable's <code>write_file</code> tool. Any agent in the workspace can read it: the shortlist becomes shared memory for other agents (a diligence bot, a CRM bot), not a dead-end UI.</td>
-      <td><code>lib/roundtable.ts</code></td></tr>
-  </table>
-  <p>Data sources (free, no keys needed): <a href="https://api.openalex.org">OpenAlex</a> for papers and authors, <a href="https://pub.orcid.org">ORCID public API</a> for education history. We don't scrape LinkedIn or Google Scholar.</p>
-  <p class="muted">Each integration fails safely. If a key is missing or a service is slow, that panel is skipped and the search still returns results.</p>
-
-  <!-- 3 -->
-  <h2 id="api">3. REST API</h2>
-  <p><code>POST /api/search</code> takes JSON <code>{"q": "&lt;thesis&gt;"}</code> and returns the full result. No auth. Allow up to 60 seconds; usually it takes 10–20. Repeating a query on the same server instance comes back from cache instantly.</p>
-  <pre><code>curl -s -X POST https://labscout-nyc.vercel.app/api/search \
+  <section class="section" aria-labelledby="h-api">
+    <h2 class="h2" id="h-api">Use the API</h2>
+    <p>No auth. Allow up to 60 s. Same pipeline as the app.</p>
+    <div class="grid-2 api">
+      <article class="sheet card">
+        <div class="card-h"><span data-i="code" data-s="20"></span><h3 class="h2">REST</h3><span class="pill">POST</span></div>
+        <code class="url">https://labscout-nyc.vercel.app/api/search</code>
+        <pre data-copy="curl -s -X POST https://labscout-nyc.vercel.app/api/search -H 'content-type: application/json' -d '{&quot;q&quot;:&quot;AI for drug discovery&quot;}'">curl -s -X POST https://labscout-nyc.vercel.app/api/search \
   -H 'content-type: application/json' \
-  -d '{"q":"AI for drug discovery"}'</code></pre>
-  <h3>Response shape</h3>
-  <pre><code>{
-  "query": "AI for drug discovery",
-  "keywords": "drug discovery machine learning molecular",   // from Nicrron/Claude
-  "totalWorks": 50,                                          // OpenAlex papers scanned
-  "candidates": [{
-    "name": "…", "institutions": ["Columbia"],
-    "isCurrentStudent": true | false | null,                 // ORCID
-    "score": 38.6,
-    "reasons": ["3 matching papers (1 first-author…) +30", "verified current student (ORCID) +15", "momentum: …"],
-    "brief": "line 1\nline 2\nline 3",
-    "works": [{ "title", "year", "venue", "url", "position": "first|middle|last", "citedBy" }],
-    "worksCount": 9, "citedByCount": 50, "recentWorksCount": 7,
-    "education": [{ "institution", "degree", "startYear", "endYear" }],
-    "mentions": [{ "title", "url", "publisher", "publishedDate", "summary" }],   // akta.pro
-    "authorId": "https://openalex.org/A…", "orcid": "https://orcid.org/…" | null
-  }],
-  "market": [{ "title", "url", "publisher", "publishedDate", "sentiment", "summary", "companies" }],  // akta.pro
-  "roundtable": { "path": "labscout/ai-for-drug-discovery.md", "version": "fdef16640495" },
-  "integrations": { "nicrron": true, "prism": true, "akta": true, "roundtable": true }
-}</code></pre>
-  <p>Errors return <code>400 {"error":"q required"}</code> or <code>500 {"error":"…"}</code>.</p>
+  -d '{"q":"AI for drug discovery"}'</pre>
+        <pre>{ "keywords": "drug discovery machine learning",
+  "candidates": [{ "name", "score", "reasons", "brief",
+    "isCurrentStudent", "works", "signals", "orcid" }],
+  "market": [{ "title", "url", "summary" }],
+  "roundtable": { "path", "version" },
+  "integrations": { "nicrron", "prism", "akta", "roundtable" } }</pre>
+      </article>
 
-  <!-- 4 -->
-  <h2 id="mcp">4. MCP endpoint</h2>
-  <p>Labscout is also an MCP server, so any agent can source students as a tool call.</p>
-  <table>
-    <tr><th>URL</th><td><code>https://labscout-nyc.vercel.app/api/mcp</code></td></tr>
-    <tr><th>Transport</th><td>Streamable HTTP. Stateless, JSON responses, no auth.</td></tr>
-    <tr><th>Tool</th><td><code>search_students(query: string, limit?: 1–10)</code> returns a markdown shortlist plus the full JSON in <code>structuredContent</code>.</td></tr>
-  </table>
+      <article class="sheet card">
+        <div class="card-h"><span data-i="plug" data-s="20"></span><h3 class="h2">MCP</h3><span class="pill">Streamable HTTP</span></div>
+        <code class="url">https://labscout-nyc.vercel.app/api/mcp</code>
+        <p>Tool <code>search_students(query, limit 1–10)</code> returns markdown plus JSON.</p>
+        <div class="seg" role="tablist" aria-label="MCP client" id="seg"></div>
+        <div id="panels"></div>
+        <div class="ping">
+          <button class="btn ghost" type="button" id="ping"><span data-i="send"></span>Test tools/list</button>
+          <span class="ping-out" id="ping-out" aria-live="polite"></span>
+        </div>
+      </article>
+    </div>
+  </section>
 
-  <h3>Claude Code</h3>
-  <pre><code>claude mcp add --transport http labscout https://labscout-nyc.vercel.app/api/mcp</code></pre>
-  <h3>Cursor / Claude Desktop / any client with remote MCP</h3>
-  <pre><code>{
-  "mcpServers": {
-    "labscout": { "url": "https://labscout-nyc.vercel.app/api/mcp" }
-  }
-}</code></pre>
-  <p class="muted">For a client that only supports stdio servers, wrap it: <code>"command": "npx", "args": ["-y", "mcp-remote", "https://labscout-nyc.vercel.app/api/mcp"]</code>.</p>
-  <h3>Hermes Agent (<code>~/.hermes/config.yaml</code>)</h3>
-  <pre><code>mcp_servers:
-  labscout:
-    url: https://labscout-nyc.vercel.app/api/mcp</code></pre>
-  <h3>Test it with curl</h3>
-  <pre><code>curl -s https://labscout-nyc.vercel.app/api/mcp -H 'content-type: application/json' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+  <section class="section" aria-labelledby="h-run">
+    <h2 class="h2" id="h-run">Run locally</h2>
+    <p>Node 22.6+ runs the TypeScript directly. Tests: <code>node --test tests/*.test.ts</code></p>
+    <div class="run">
+      <pre data-copy="git clone https://github.com/jakdemir/labscout
+cd labscout
+node scripts/dev.ts">git clone https://github.com/jakdemir/labscout
+<span class="c"># .env.local: NICRRON_API_KEY (required), AKTA_API_KEY,</span>
+<span class="c"># PRISMTRACE_API_KEY, PRISMTRACE_PROJECT_ID, ROUNDTABLE_KEY</span>
+cd labscout; node scripts/dev.ts   <span class="c"># localhost:3000</span></pre>
+      <dl class="fmap">
+        <dt><code>lib/search.ts</code></dt><dd>Pipeline orchestrator</dd>
+        <dt><code>lib/score.ts</code></dt><dd>Ranking rules, unit-tested</dd>
+        <dt><code>lib/sources/*.ts</code></dt><dd>One file per signal source</dd>
+        <dt><code>lib/llm.ts</code> · <code>prism.ts</code> · <code>akta.ts</code> · <code>roundtable.ts</code></dt><dd>One file per sponsor</dd>
+        <dt><code>lib/mcp.ts</code></dt><dd>MCP server (JSON-RPC 2.0)</dd>
+        <dt><code>public/*.html</code></dt><dd>These three tabs</dd>
+      </dl>
+    </div>
+  </section>
 
-curl -s https://labscout-nyc.vercel.app/api/mcp -H 'content-type: application/json' \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_students","arguments":{"query":"robotics manipulation","limit":3}}}'</code></pre>
-  <p>Then ask your agent: <em>"Use labscout to find students working on battery materials and draft intro emails for the top 3."</em></p>
+  <p class="ethics"><span class="tag-hi">No LinkedIn, no Google Scholar scraping — public APIs only.</span></p>
 
-  <h3>Sponsor MCP servers (optional, they need your own key)</h3>
-  <table>
-    <tr><th>Roundtable</th><td><code>https://roundtable.bot/mcp</code>. Read the shortlists Labscout saved (<code>read_file</code>, <code>browse_folder</code>) from your own agent. Get a key under Agents → Connect agent → Assistant.</td></tr>
-    <tr><th>akta.pro</th><td>MCP setup at <a href="https://docs.akta.pro/docs/developer-tools/mcp/setup">docs.akta.pro → MCP</a>. Company data, news and list generation.</td></tr>
-  </table>
-
-  <!-- 5 -->
-  <h2 id="accounts">5. Sponsor dashboards &amp; access</h2>
-  <p>Jak owns the accounts. Ask him to invite you. Never paste keys into chat or commit them; they live only in Vercel env vars and in Jak's local <code>.env.local</code>.</p>
-  <table>
-    <tr><th>Sponsor</th><th>Dashboard</th><th>What to look at</th><th>Get access</th></tr>
-    <tr><td>Nicrron</td><td><a href="https://nicrron.ai/dashboard/keys">nicrron.ai/dashboard</a></td><td>Usage and balance per model</td><td>Your own free account works for local dev</td></tr>
-    <tr><td>PRISM</td><td><a href="https://prism.blockconvey.com">prism.blockconvey.com</a></td><td>Traces → filter by agent <code>brief-writer</code>; Sessions → one per search; scores and latency</td><td>Owner: <em>Invite your team → Add team member</em></td></tr>
-    <tr><td>akta.pro</td><td><a href="https://playground.akta.pro">playground.akta.pro</a></td><td>Credits used; try queries in the playground</td><td>Use your own account (promo <code>DEALFLOW50</code>)</td></tr>
-    <tr><td>Roundtable</td><td><a href="https://roundtable.bot/app">roundtable.bot/app</a></td><td>Browse → <code>labscout/*.md</code>: each shortlist with author and version history</td><td>Owner: Settings → Team → share the <code>team-…</code> code; sign up and enter it</td></tr>
-  </table>
-
-  <!-- 6 -->
-  <h2 id="dev">6. Run &amp; change the code</h2>
-  <p>No dependencies and no build step: Node 22.6+ runs the TypeScript directly.</p>
-  <pre><code>git clone https://github.com/jakdemir/labscout && cd labscout
-# create .env.local with your own keys (names only shown here):
-#   NICRRON_API_KEY=…          required (LLM)
-#   OPENALEX_MAILTO=you@…      recommended
-#   AKTA_API_KEY=…             optional
-#   PRISMTRACE_API_KEY=…  PRISMTRACE_PROJECT_ID=…   optional
-#   ROUNDTABLE_KEY=…           optional
-node scripts/dev.ts             # http://localhost:3000  (also /docs, /api/search, /api/mcp)
-node --test tests/*.test.ts     # unit tests</code></pre>
-  <table>
-    <tr><th>File</th><th>What it does</th></tr>
-    <tr><td><code>api/search.ts</code></td><td>Runs the search and serves <code>/api/search</code> on Vercel</td></tr>
-    <tr><td><code>api/mcp.ts</code>, <code>lib/mcp.ts</code></td><td>The MCP server</td></tr>
-    <tr><td><code>lib/openalex.ts</code>, <code>lib/orcid.ts</code></td><td>Research data</td></tr>
-    <tr><td><code>lib/aggregate.ts</code>, <code>lib/score.ts</code></td><td>Groups papers by author and ranks them (tested)</td></tr>
-    <tr><td><code>lib/llm.ts</code> · <code>lib/prism.ts</code> · <code>lib/akta.ts</code> · <code>lib/roundtable.ts</code></td><td>One file per sponsor</td></tr>
-    <tr><td><code>public/index.html</code>, <code>public/docs.html</code></td><td>The UI and this page</td></tr>
-  </table>
-  <p>Deploy: push to <code>main</code>, then Jak runs <code>vercel --prod</code> (personal <code>jakdemir</code> scope). Change ranking weights in <code>lib/score.ts</code> and run the tests.</p>
-
-  <!-- 7 -->
-  <h2 id="demo">7. Demo script (about 3 minutes)</h2>
-  <ol>
-    <li><strong>Problem (20 s).</strong> "Every fund chases the same founders on LinkedIn at the same time. The best technical founders show up in papers and grants 18 months before they incorporate."</li>
-    <li><strong>Live search (60 s).</strong> Type a judge's thesis. Show the Market pull panel (akta.pro), then the #1 card: badge, brief, evidence links, and the <code>score ⓘ</code> breakdown.</li>
-    <li><strong>Forwardable (15 s).</strong> Copy brief, paste into an email.</li>
-    <li><strong>Agent-native (30 s).</strong> Open Roundtable and show the saved shortlist file. Run the same query from Claude through the MCP endpoint. Open PRISM and show the traces for that search.</li>
-    <li><strong>Business (45 s).</strong> Buyer: platform teams and associates at pre-seed funds. Price: about $5–10k per fund per year. First 10 customers: the funds in this room. Why now: open research data plus LLM briefs make this cheap for the first time.</li>
-  </ol>
-  <p class="muted">If the Wi-Fi fails, use <a href="/?mock=1">/?mock=1</a>.</p>
+</div>
 </main>
+<div id="ls-foot"></div>
+<script src="/assets/shell.js"></script>
 <script>
-  document.querySelectorAll("pre").forEach(function (pre) {
-    var b = document.createElement("button"); b.className = "copy"; b.textContent = "Copy";
-    b.onclick = function () { navigator.clipboard.writeText(pre.innerText.replace(/\nCopy$/, "")).then(function () { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy"; }, 1200); }); };
-    pre.appendChild(b);
+(function () {
+  var I = LS.icon, E = LS.esc;
+  var BASE = "https://labscout-nyc.vercel.app";
+  function $(id) { return document.getElementById(id); }
+
+  // inline icons
+  document.querySelectorAll("[data-i]").forEach(function (el) {
+    var svg = I(el.getAttribute("data-i"), Number(el.getAttribute("data-s")) || 16);
+    if (el.classList.contains("node") || el.tagName === "BUTTON") el.insertAdjacentHTML("afterbegin", svg);
+    else if (el.classList.contains("link")) el.innerHTML = svg;
+    else el.outerHTML = svg;
   });
+
+  // stages (docs/SOURCES.md); s: 1 live, 0 needs key / paused
+  var STAGES = [
+    { t: "Research quality", live: [["OpenAlex", 1], ["ORCID", 1], ["arXiv", 1], ["Semantic Scholar", 1]], road: "OpenReview, NSF GRFP" },
+    { t: "Builder signal", live: [["GitHub", 1]], road: "Hugging Face, releases" },
+    { t: "Commercial pull", live: [], road: "Corporate co-authors, Lens.org, SAM.gov" },
+    { t: "Spinout intent", live: [["NSF I-Corps / SBIR", 1], ["PatentsView", 0], ["SBIR.gov", 0]], road: "SEC Form D, NY DOS", strong: 1 },
+    { t: "Early traction", live: [["akta.pro news", 1]], road: "Job posts, openFDA" },
+    { t: "Track record", live: [["NSF grants", 1]], road: "NIH RePORTER, USAspending" },
+  ];
+  $("ladder").innerHTML = STAGES.map(function (s, i) {
+    var tags = s.live.map(function (x) { return '<span class="pill' + (x[1] ? " ok" : "") + '">' + E(x[0]) + "</span>"; }).join("");
+    return '<div class="meter settle' + (s.strong ? " dark" : "") + '" role="listitem" style="--i:' + i + '"><span class="label">0' + (i + 1) + " " + E(s.t) + (s.strong ? " · ×weight" : "") + "</span>" +
+      '<div class="tags">' + (tags || '<span class="none">No live source yet</span>') + "</div>" +
+      '<p class="road">Next: ' + E(s.road) + "</p></div>";
+  }).join("");
+
+  // ranking rules (lib/score.ts)
+  var RULES = [
+    ["Matching paper, first / middle / last author", "OpenAlex", "+10 / +3 / +1", "pos"],
+    ["Citations per paper (0.25 each, max 20)", "OpenAlex", "up to +5", "pos"],
+    ["Paper published 2025 or later", "OpenAlex", "+2", "pos"],
+    ["Current student / education ended", "ORCID", "+15 / −15", ""],
+    ["Momentum: share of papers in last 2 years", "OpenAlex", "up to +10", "pos"],
+    ["Established author: over 30 papers, or publishing before 2018", "OpenAlex", "up to −20, −10", "neg"],
+    ["Founder signals, per source", "lib/sources", "cap +15", "pos"],
+  ];
+  $("rank").tBodies[0].innerHTML = RULES.map(function (r) {
+    return "<tr><td>" + E(r[0]) + '</td><td class="src">' + E(r[1]) + '</td><td class="num">' + E(r[2]) + "</td></tr>";
+  }).join("");
+
+  // MCP client switcher
+  var CLIENTS = [
+    { id: "cc", label: "Claude Code", code: "claude mcp add --transport http labscout " + BASE + "/api/mcp" },
+    { id: "cur", label: "Cursor / Claude Desktop", code: '{ "mcpServers": { "labscout": { "url": "' + BASE + '/api/mcp" } } }' },
+    { id: "her", label: "Hermes", code: "# ~/.hermes/config.yaml\nmcp_servers:\n  labscout:\n    url: " + BASE + "/api/mcp" },
+  ];
+  $("seg").innerHTML = CLIENTS.map(function (c, i) {
+    return '<button type="button" role="tab" id="t-' + c.id + '" aria-controls="p-' + c.id + '" aria-selected="' + (i === 0) + '" tabindex="' + (i === 0 ? 0 : -1) + '">' + E(c.label) + "</button>";
+  }).join("");
+  $("panels").innerHTML = CLIENTS.map(function (c, i) {
+    return '<div class="panel" role="tabpanel" id="p-' + c.id + '" aria-labelledby="t-' + c.id + '"' + (i ? " hidden" : "") + '><pre data-copy="' + E(c.code) + '">' + E(c.code) + "</pre></div>";
+  }).join("");
+  var tabs = Array.prototype.slice.call(document.querySelectorAll("#seg button"));
+  function pick(k) {
+    tabs.forEach(function (b, i) { var on = i === k; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; $("p-" + CLIENTS[i].id).hidden = !on; });
+  }
+  tabs.forEach(function (b, i) {
+    b.onclick = function () { pick(i); };
+    b.onkeydown = function (e) {
+      var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+      if (!d) return; e.preventDefault(); var k = (i + d + tabs.length) % tabs.length; pick(k); tabs[k].focus();
+    };
+  });
+  LS.copyPre();
+
+  // live MCP check
+  var btn = $("ping"), out = $("ping-out");
+  btn.onclick = function () {
+    btn.disabled = true; out.className = "ping-out"; out.textContent = "Calling /api/mcp…";
+    var t0 = performance.now();
+    fetch("/api/mcp", { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }) })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (j) {
+        var tools = (j && j.result && j.result.tools) || [];
+        if (!tools.length) throw new Error("no tools returned");
+        var ms = Math.round(performance.now() - t0);
+        out.innerHTML = '<i class="dot ok"></i><span><code>' + E(tools.map(function (t) { return t.name; }).join(", ")) + '</code> in <span class="num">' + ms + " ms</span></span>";
+      })
+      .catch(function (e) { out.className = "ping-out err"; out.textContent = "MCP unreachable (" + (e.message || "network") + "). Retry."; })
+      .then(function () { btn.disabled = false; });
+  };
+})();
 </script>
 </body>
 </html>
