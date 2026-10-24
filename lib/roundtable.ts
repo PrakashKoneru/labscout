@@ -8,11 +8,12 @@ export function roundtableEnabled(): boolean {
   return !!process.env.ROUNDTABLE_KEY;
 }
 
-async function call(tool: string, args: Record<string, unknown>): Promise<any> {
+// Write tools take a request_id for idempotent retries; read tools reject it with 422.
+async function call(tool: string, args: Record<string, unknown>, write = true): Promise<any> {
   const r = await fetch(`${URL_}/api/tools/${tool}`, {
     method: "POST",
     headers: { authorization: `Bearer ${process.env.ROUNDTABLE_KEY}`, "content-type": "application/json" },
-    body: JSON.stringify({ ...args, request_id: crypto.randomUUID() }),
+    body: JSON.stringify(write ? { ...args, request_id: crypto.randomUUID() } : args),
     signal: AbortSignal.timeout(15000),
   });
   if (!r.ok) throw new Error(`Roundtable ${tool} ${r.status}: ${(await r.text()).slice(0, 200)}`);
@@ -76,7 +77,7 @@ export function diffShortlist(prev: { names: string[]; generatedAt: string | nul
 export async function readShortlist(query: string): Promise<string | null> {
   if (!roundtableEnabled()) return null;
   try {
-    const d = await call("read_file", { path: `labscout/${slug(query)}.md` });
+    const d = await call("read_file", { path: `labscout/${slug(query)}.md` }, false);
     const text = [d?.content, d?.file?.content, d?.data?.content].find((x) => typeof x === "string");
     if (text === undefined) console.log("roundtable read_file: no content field; keys =", Object.keys(d ?? {}).join(","));
     return text ?? null;
