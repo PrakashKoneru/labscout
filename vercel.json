@@ -2,5 +2,8 @@
   "functions": {
     "api/*.ts": { "maxDuration": 60, "includeFiles": "lib/**" }
   },
-  "rewrites": [{ "source": "/docs", "destination": "/docs.html" }]
+  "rewrites": [
+    { "source": "/docs", "destination": "/docs.html" },
+    { "source": "/sponsors", "destination": "/sponsors.html" }
+  ]
 }

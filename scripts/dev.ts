@@ -48,7 +48,14 @@ http.createServer(async (req, res) => {
     res.end(JSON.stringify(out));
     return;
   }
-  const rel = req.url === "/" ? "index.html" : req.url === "/docs" ? "docs.html" : (req.url ?? "").split("?")[0];
+  if (req.method === "GET" && (req.url ?? "").split("?")[0] === "/api/status") {
+    const { getStatus } = await import("../lib/status.ts");
+    const out = await getStatus(/[?&]fresh=1/.test(req.url ?? ""));
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify(out));
+    return;
+  }
+  const rel = req.url === "/" ? "index.html" : req.url === "/docs" ? "docs.html" : req.url === "/sponsors" ? "sponsors.html" : (req.url ?? "").split("?")[0];
   const f = path.join(PUB, path.normalize(rel).replace(/^(\.\.[/\\])+/, ""));
   if (f.startsWith(PUB) && existsSync(f)) {
     res.writeHead(200, { "content-type": TYPES[path.extname(f)] ?? "application/octet-stream" });
