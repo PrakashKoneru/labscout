@@ -24,8 +24,13 @@ neon env pull      # writes DATABASE_URL, DATABASE_URL_UNPOOLED, NEON_BRANCH int
 npm run dev
 ```
 
-`.env.local` also needs `NICRRON_API_KEY`, which Neon does not manage. Set `NICRRON_MODEL` to
-override the default model (`anthropic/claude-sonnet-5-5`).
+`.env.local` also needs `NICRRON_API_KEY`, which Neon does not manage. Optional overrides:
+
+| Variable            | Default                           | Purpose                                     |
+| ------------------- | --------------------------------- | ------------------------------------------- |
+| `NICRRON_MODEL`     | `anthropic/claude-sonnet-5-5`     | Gateway model slug                          |
+| `LABSCOUT_API_URL`  | `https://labscout-nyc.vercel.app` | Upstream search API                         |
+| `LABSCOUT_MOCK`     | unset                             | Set to `1` to serve a canned result offline |
 
 Open the home page and use its two buttons: one writes a row to Postgres and reads it back, the
 other sends a prompt to Claude. Both go through route handlers, so a green result means the whole

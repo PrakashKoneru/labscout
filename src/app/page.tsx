@@ -1,48 +1,63 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
+import NichePanel from "./components/NichePanel";
+import PeoplePanel from "./components/PeoplePanel";
+import type { Probe, SearchResult } from "@/lib/labscout";
+import type { Niche, ThesisRead, Turn } from "@/lib/thesis";
 import styles from "./page.module.css";
 
 const ACCEPT = ".pdf,.txt,.md,.markdown,.csv,.json,.rtf";
 
-type Source = {
-  kind: "file" | "gdoc";
-  label: string;
-  note: string;
-  readable: boolean;
-};
+const EXAMPLES = [
+  "We back pre-seed technical founders in AI for drug discovery",
+  "Hard tech: battery materials, novel compute, climate sensing",
+  "Applied ML systems — agents, inference infrastructure, eval tooling",
+];
 
-type Profile = {
-  title: string;
-  summary: string;
-  field: string;
-  stage: string;
-  keywords: string[];
-  methods: string[];
-  applications: string[];
-  commercialAngle: string;
-};
+type SourceSummary = { kind: string; label: string; note: string; readable: boolean };
 
-type IntakeResponse = {
-  sources?: Source[];
-  profile?: Profile;
-  model?: string;
-  usage?: { inputTokens: number; outputTokens: number };
-  match?: unknown;
-  error?: string;
+type Busy = null | "thesis" | "chat" | "people";
+
+const WAITING: Record<Exclude<Busy, null>, string> = {
+  thesis: "Reading your thesis, then probing every niche against OpenAlex, ORCID and akta.pro",
+  chat: "Rethinking the niches and re-probing each one",
+  people: "Searching papers, checking ORCID, writing briefs, saving to Roundtable",
 };
 
 export default function Home() {
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<Busy>(null);
+  const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<IntakeResponse | null>(null);
+  const [sources, setSources] = useState<SourceSummary[]>([]);
+  const [thesis, setThesis] = useState<ThesisRead | null>(null);
+  const [niches, setNiches] = useState<Niche[]>([]);
+  const [probes, setProbes] = useState<Probe[]>([]);
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [result, setResult] = useState<SearchResult | null>(null);
+
   const fileInput = useRef<HTMLInputElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
 
   const hasInput = text.trim().length > 0 || files.length > 0;
+
+  useEffect(() => {
+    if (!busy) return;
+    const started = Date.now();
+    const timer = setInterval(() => setElapsed(Math.round((Date.now() - started) / 1000)), 500);
+    return () => clearInterval(timer);
+  }, [busy]);
+
+  /** Resetting the clock here rather than in the effect keeps renders from cascading. */
+  function start(kind: Exclude<Busy, null>) {
+    setElapsed(0);
+    setBusy(kind);
+    setError(null);
+  }
 
   function grow(element: HTMLTextAreaElement) {
     element.style.height = "auto";
@@ -55,153 +70,226 @@ export default function Home() {
   }
 
   function onFilesPicked(event: ChangeEvent<HTMLInputElement>) {
-    const picked = Array.from(event.target.files ?? []);
-    setFiles((current) => [...current, ...picked]);
+    setFiles((current) => [...current, ...Array.from(event.target.files ?? [])]);
     event.target.value = "";
-  }
-
-  function removeFile(index: number) {
-    setFiles((current) => current.filter((_, i) => i !== index));
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      void submit();
+      void submitThesis();
     }
   }
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    await submit();
-  }
-
-  async function submit() {
+  async function submitThesis() {
     if (!hasInput || busy) return;
 
-    setBusy(true);
-    setError(null);
+    start("thesis");
     setResult(null);
+    setChosen(null);
+    setTurns([]);
 
     const payload = new FormData();
     payload.set("text", text);
     for (const file of files) payload.append("files", file);
 
     try {
-      const response = await fetch("/api/intake", { method: "POST", body: payload });
-      const data: IntakeResponse = await response.json();
-      if (!response.ok || data.error) throw new Error(data.error ?? "Intake failed");
-      setResult(data);
-      setText("");
-      setFiles([]);
-      if (textarea.current) {
-        textarea.current.style.height = "auto";
-      }
+      const response = await fetch("/api/thesis", { method: "POST", body: payload });
+      const data = await response.json();
+      if (!response.ok || data.error) throw new Error(data.error ?? "Could not read the thesis");
+
+      setThesis(data.thesis);
+      setNiches(data.thesis.niches);
+      setProbes(data.probes);
+      setSources(data.sources ?? []);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Something went wrong");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
+
+  async function refine(message: string) {
+    if (!thesis || busy) return;
+
+    const history: Turn[] = [...turns, { role: "user", content: message }];
+    setTurns(history);
+    start("chat");
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ thesis: { ...thesis, niches }, history }),
+      });
+      const data = await response.json();
+      if (!response.ok || data.error) throw new Error(data.error ?? "Could not refine the niches");
+
+      setTurns([...history, { role: "assistant", content: data.reply }]);
+      setNiches(data.niches);
+      setProbes(data.probes);
+      setChosen(null);
+      setResult(null);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Something went wrong");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function choose(niche: Niche) {
+    if (busy) return;
+
+    start("people");
+    setChosen(niche.query);
+
+    try {
+      const response = await fetch("/api/people", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ query: niche.query }),
+      });
+      const data = await response.json();
+      if (!response.ok || data.error) throw new Error(data.error ?? "Could not find people");
+      setResult(data);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Something went wrong");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function reset() {
+    setThesis(null);
+    setNiches([]);
+    setProbes([]);
+    setTurns([]);
+    setResult(null);
+    setChosen(null);
+    setSources([]);
+    setError(null);
+    setText("");
+    setFiles([]);
+  }
+
+  const skipped = sources.filter((source) => !source.readable);
 
   return (
     <div className={styles.page}>
       <main className={styles.main}>
         <h1 className={styles.wordmark}>labscout</h1>
         <p className={styles.tagline}>
-          Paste your work, drop a doc, or share a Google Doc link.
+          Drop your fund thesis. We find the niches where the talent actually is, then the people in them.
         </p>
 
-        <form className={styles.composer} onSubmit={onSubmit}>
-          {files.length > 0 && (
-            <ul className={styles.chips}>
-              {files.map((file, index) => (
-                <li key={`${file.name}-${index}`} className={styles.chip}>
-                  <span className={styles.chipName}>{file.name}</span>
-                  <button
-                    type="button"
-                    className={styles.chipRemove}
-                    onClick={() => removeFile(index)}
-                    aria-label={`Remove ${file.name}`}
-                  >
-                    ×
-                  </button>
-                </li>
+        {!thesis && (
+          <>
+            <form className={styles.composer} onSubmit={(event: FormEvent) => {
+              event.preventDefault();
+              void submitThesis();
+            }}>
+              {files.length > 0 && (
+                <ul className={styles.chips}>
+                  {files.map((file, index) => (
+                    <li key={`${file.name}-${index}`} className={styles.chip}>
+                      <span className={styles.chipName}>{file.name}</span>
+                      <button
+                        type="button"
+                        className={styles.chipRemove}
+                        onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <textarea
+                ref={textarea}
+                className={styles.input}
+                value={text}
+                onChange={onTextChange}
+                onKeyDown={onKeyDown}
+                placeholder="Paste your thesis, attach the memo, or describe what you invest in…"
+                rows={1}
+              />
+
+              <div className={styles.actions}>
+                <input
+                  ref={fileInput}
+                  type="file"
+                  multiple
+                  accept={ACCEPT}
+                  className={styles.hiddenInput}
+                  onChange={onFilesPicked}
+                />
+                <button type="button" className={styles.attach} onClick={() => fileInput.current?.click()}>
+                  Attach thesis
+                </button>
+                <button type="submit" className={styles.send} disabled={!hasInput || busy !== null}>
+                  {busy ? "Working…" : "Find my niche"}
+                </button>
+              </div>
+            </form>
+
+            <div className={styles.examples}>
+              {EXAMPLES.map((example) => (
+                <button
+                  key={example}
+                  type="button"
+                  className={styles.example}
+                  onClick={() => {
+                    setText(example);
+                    if (textarea.current) grow(textarea.current);
+                  }}
+                >
+                  {example}
+                </button>
               ))}
-            </ul>
-          )}
+            </div>
+          </>
+        )}
 
-          <textarea
-            ref={textarea}
-            className={styles.input}
-            value={text}
-            onChange={onTextChange}
-            onKeyDown={onKeyDown}
-            placeholder="Describe what you are building, or paste a link…"
-            rows={1}
-          />
-
-          <div className={styles.actions}>
-            <input
-              ref={fileInput}
-              type="file"
-              multiple
-              accept={ACCEPT}
-              className={styles.hiddenInput}
-              onChange={onFilesPicked}
-            />
-            <button
-              type="button"
-              className={styles.attach}
-              onClick={() => fileInput.current?.click()}
-            >
-              Attach
-            </button>
-            <button type="submit" className={styles.send} disabled={!hasInput || busy}>
-              {busy ? "Processing…" : "Send"}
-            </button>
-          </div>
-        </form>
-
-        <p className={styles.hint}>Enter to send · Shift + Enter for a new line</p>
+        {busy && (
+          <p className={styles.waiting}>
+            {WAITING[busy]} · {elapsed}s
+            <span className={styles.waitingHint}>usually 10–20 seconds</span>
+          </p>
+        )}
 
         {error && <p className={styles.error}>{error}</p>}
 
-        {result && (
-          <section className={styles.result}>
-            <h2 className={styles.resultTitle}>Sources</h2>
-            {result.sources?.map((source, index) => (
-              <article key={index} className={styles.source}>
-                <header className={styles.sourceHead}>
-                  <span className={styles.sourceKind}>{source.kind}</span>
-                  <span className={styles.sourceLabel}>{source.label}</span>
-                  <span className={styles.sourceMeta}>{source.readable ? "read" : "skipped"}</span>
-                </header>
-                <p className={styles.sourcePreview}>{source.note}</p>
-              </article>
+        {skipped.length > 0 && (
+          <ul className={styles.skipped}>
+            {skipped.map((source) => (
+              <li key={source.label}>
+                {source.label}: {source.note}
+              </li>
             ))}
+          </ul>
+        )}
 
-            {result.profile && (
-              <>
-                <h2 className={`${styles.resultTitle} ${styles.spaced}`}>
-                  Extracted
-                  <span className={styles.usage}>
-                    {result.model}
-                    {result.usage &&
-                      ` · ${result.usage.inputTokens.toLocaleString()} in · ${result.usage.outputTokens.toLocaleString()} out`}
-                  </span>
-                </h2>
-                <pre className={styles.json}>{JSON.stringify(result.profile, null, 2)}</pre>
-              </>
-            )}
+        {thesis && (
+          <NichePanel
+            thesis={thesis}
+            niches={niches}
+            probes={probes}
+            turns={turns}
+            busy={busy !== null}
+            chosen={chosen}
+            onRefine={(message) => void refine(message)}
+            onChoose={(niche) => void choose(niche)}
+          />
+        )}
 
-            {result.match !== undefined && (
-              <>
-                <h2 className={`${styles.resultTitle} ${styles.spaced}`}>Matching API response</h2>
-                <pre className={styles.json}>{JSON.stringify(result.match, null, 2)}</pre>
-              </>
-            )}
-          </section>
+        {result && <PeoplePanel result={result} />}
+
+        {thesis && (
+          <button type="button" className={styles.reset} onClick={reset} disabled={busy !== null}>
+            Start over with a different thesis
+          </button>
         )}
       </main>
     </div>

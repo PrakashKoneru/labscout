@@ -1,0 +1,229 @@
+.panel {
+  width: 100%;
+  margin-top: 40px;
+}
+
+.heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.note {
+  color: var(--accent);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 13px;
+}
+
+.thesis {
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary {
+  margin-top: 12px;
+  color: var(--text);
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.tag {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent);
+  font-size: 12.5px;
+}
+
+.tagAvoid {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--faint);
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 24px 0;
+}
+
+.fromUser,
+.fromAgent {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 15px;
+}
+
+.fromUser {
+  align-self: flex-end;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+}
+
+.fromAgent {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.niches {
+  list-style: none;
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.niche {
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.nicheChosen {
+  border-color: var(--accent-line);
+}
+
+.nicheHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.nicheLabel {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.query {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+}
+
+.rationale {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.evidence {
+  margin-top: 6px;
+  color: var(--faint);
+  font-size: 14px;
+  font-style: italic;
+}
+
+.density {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.metric strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.metricFaint {
+  color: var(--faint);
+}
+
+.probeError {
+  margin-top: 14px;
+  color: var(--faint);
+  font-size: 13.5px;
+}
+
+.names {
+  margin-top: 8px;
+  color: var(--faint);
+  font-size: 13.5px;
+}
+
+.choose {
+  margin-top: 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+}
+
+.choose:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.refine {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.refineInput {
+  flex: 1;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+}
+
+.refineInput:focus {
+  outline: none;
+  border-color: var(--accent-line);
+}
+
+.refineInput::placeholder {
+  color: var(--faint);
+}
+
+.refineSend {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.refineSend:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
