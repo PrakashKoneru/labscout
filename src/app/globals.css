@@ -107,7 +107,7 @@ h3 {
   line-height: normal;
   -webkit-font-smoothing: antialiased;
 }
-.fullSignalRoot button, .fullSignalRoot input, .fullSignalRoot textarea, .fullSignalRoot select { font: inherit; color: inherit; }
+:where(.fullSignalRoot) button, :where(.fullSignalRoot) input, :where(.fullSignalRoot) textarea, :where(.fullSignalRoot) select { font: inherit; color: inherit; }
 .fullSignalRoot button { touch-action: manipulation; }
 .fullSignalRoot button:focus-visible, .fullSignalRoot a:focus-visible, .fullSignalRoot input:focus-visible, .fullSignalRoot select:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
 .fullSignalRoot button:disabled { cursor: not-allowed; }
