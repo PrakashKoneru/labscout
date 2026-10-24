@@ -39,7 +39,7 @@
   if (top) {
     top.outerHTML =
       '<header class="ls-top"><div class="ls-top-in">' +
-        '<a class="ls-brand" href="/" aria-label="Labscout home"><i></i>Labscout</a>' +
+        '<a class="ls-brand" href="/" aria-label="Labscout home"><i></i>Labscout<small>Student founder watchlist</small></a>' +
         '<nav class="ls-tabs" aria-label="Sections">' +
           TABS.map(function (t) {
             var cur = t.match.indexOf(path) >= 0 ? ' aria-current="page"' : "";
