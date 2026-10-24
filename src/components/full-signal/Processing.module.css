@@ -1,0 +1,24 @@
+.processing { padding:22px 4.2% 28px; color:var(--ink); }
+.topline { display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.back { border:0; background:none; padding:7px 0; font-size:12px; cursor:pointer; }
+.back span { margin-right:9px; }
+.back:hover { text-decoration:underline; text-underline-offset:4px; }
+.fileIndex { font-family:var(--font-mono); font-size:9px; letter-spacing:.08em; color:var(--muted); }
+.stage { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:calc(100svh - 180px); padding:28px 0 0; }
+.status { text-align:center; width:100%; }
+.eyebrow { margin:0 0 18px; font-family:var(--font-mono); font-size:9px; letter-spacing:.18em; color:var(--muted); }
+.heading { margin:0; min-height:65px; font-family:var(--font-serif); font-size:clamp(29px,3.8vw,53px); letter-spacing:-.035em; line-height:1.15; font-weight:400; }
+.rotatingCheck { display:inline-flex; gap:15px; align-items:center; justify-content:center; animation:checkArrives 300ms ease both; }
+.checkIcon { display:inline-grid; place-items:center; flex:0 0 31px; width:31px; height:31px; border:1px solid var(--ink); border-radius:50%; background:var(--accent); }
+.checkIcon svg { display:block; width:21px; height:21px; }
+.sequence { display:flex; justify-content:center; gap:7px; margin:12px 0 0; }
+.sequence span { width:4px; height:4px; border-radius:50%; background:#b4b3aa; }
+.sequence .active { background:var(--ink); }
+.animation { width:min(100%,760px); margin:15px auto 0; }
+.animation > div { width:100%; }
+.skip { display:flex; gap:28px; background:transparent; border:0; border-bottom:1px solid var(--line); padding:7px 0; margin:5px 0 0; font-size:11px; color:var(--muted); cursor:pointer; }
+.skip:hover { color:var(--ink); border-color:var(--ink); }
+@keyframes checkArrives { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+@media(min-width:800px) and (max-height:850px){.stage{padding-top:18px}.animation{width:min(100%,calc((100svh - 335px)*1.2))}.eyebrow{margin-bottom:14px}.heading{min-height:55px}}
+@media(max-width:700px){.processing{padding:18px 5% 25px}.fileIndex{font-size:7px}.back{font-size:10px}.topline{gap:12px}.stage{min-height:calc(100svh - 160px);padding-top:35px}.heading{min-height:85px;max-width:100%;font-size:32px}.rotatingCheck{max-width:100%;gap:11px}.checkIcon{flex-basis:26px;width:26px;height:26px}.checkIcon svg{width:18px;height:18px}.animation{width:100%;margin-top:10px}.eyebrow{font-size:8px}.sequence{margin-top:8px}.skip{margin-top:12px}}
+@media(prefers-reduced-motion:reduce){.rotatingCheck{animation:none}}

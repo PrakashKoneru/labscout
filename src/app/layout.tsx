@@ -13,9 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "labscout — helping great companies exist",
-  description:
-    "labscout finds technical founders before they incorporate, from the research grants and code they already publish.",
+  title: "All Signal — Find what’s forming",
+  description: "An evidence-led research cabinet for finding emerging founders, teams, and ideas.",
 };
 
 export default function RootLayout({

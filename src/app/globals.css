@@ -81,3 +81,36 @@ h3 {
     --section-y: 72px;
   }
 }
+
+.fullSignalRoot {
+  --canvas: #e5e4e0;
+  --paper: #f7f6f0;
+  --ink: #191919;
+  --muted: #66655f;
+  --line: #b9b8b0;
+  --accent: #f2ed76;
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --font-sans: var(--font-geist-sans, Arial), Arial, sans-serif;
+  --font-mono: var(--font-geist-mono, 'Courier New'), 'Courier New', monospace;
+  --font-editorial: var(--font-serif);
+  --font-serif: 'Iowan Old Style', 'Baskerville', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  color-scheme: light;
+}
+
+.fullSignalRoot {
+  min-height: 100dvh;
+  color: var(--ink);
+  background: var(--canvas);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: normal;
+  -webkit-font-smoothing: antialiased;
+}
+:where(.fullSignalRoot) button, :where(.fullSignalRoot) input, :where(.fullSignalRoot) textarea, :where(.fullSignalRoot) select { font: inherit; color: inherit; }
+.fullSignalRoot button { touch-action: manipulation; }
+.fullSignalRoot button:focus-visible, .fullSignalRoot a:focus-visible, .fullSignalRoot input:focus-visible, .fullSignalRoot select:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+.fullSignalRoot button:disabled { cursor: not-allowed; }
+.fullSignalRoot [hidden] { display: none !important; }
+.fullSignalRoot ::selection { background:var(--accent); color:var(--ink); }
+@media(prefers-reduced-motion:reduce){.fullSignalRoot *,.fullSignalRoot *::before,.fullSignalRoot *::after{animation:none !important;transition:none !important;scroll-behavior:auto !important;}}
