@@ -6,7 +6,7 @@
 
 **Jobs:**
 1. Turn a thesis into a ranked shortlist of students in under 20 s.
-2. Trust each rank: every claim links to its source (paper, ORCID, GitHub, NSF, news).
+2. Trust each rank: every claim links to its source (paper, ORCID, GitHub, Hugging Face, NSF/NIH award, SEC/NY filing, news).
 3. Forward a brief to a partner as-is.
 
 **Surfaces (3 tabs):**
@@ -18,4 +18,4 @@
 
 **Constraints:** zero npm dependencies, no build step, static HTML + vanilla JS, self-hosted fonts (venue Wi-Fi is unreliable), works offline via `/?mock=1`.
 
-**Data truths:** Columbia, NYU, Cornell, Cornell Tech; papers 2024–26; sources OpenAlex, ORCID, GitHub, arXiv, Semantic Scholar, NSF (live), PatentsView + SBIR.gov (built, upstream down), akta.pro news. No LinkedIn, no Google Scholar scraping.
+**Data truths:** Columbia, NYU, Cornell, Cornell Tech; papers 2024–26; OpenAlex + ORCID core, 23 founder-signal sources in `lib/sources/` (21 live, PatentsView + SBIR.gov built but upstream down; catalog in `docs/SOURCES.md`), akta.pro news. Every signal needs a name match plus institution, shared paper, ORCID or handle evidence. No LinkedIn, no Google Scholar scraping, no X/Twitter.

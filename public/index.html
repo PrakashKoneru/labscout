@@ -176,7 +176,8 @@
   resetBtn.innerHTML = icon("refresh", 12) + "New thesis";
 
   var NOW_Y = new Date().getFullYear();
-  var STEPS = ["Reading thesis · Nicrron", "Searching papers + news", "Checking ORCID + GitHub/arXiv/NSF", "Writing briefs", "Saving to Roundtable"];
+  var STEPS = ["Reading thesis · Nicrron", "Searching papers + news", "Checking 23 founder-signal sources", "Writing briefs", "Saving to Roundtable"];
+  var SRC = { github: "GitHub", arxiv: "arXiv", semanticscholar: "Semantic Scholar", nsf: "NSF", nih: "NIH", patentsview: "USPTO", sbir: "SBIR", huggingface: "Hugging Face", packages: "PyPI/npm", zenodo: "Zenodo", crossref: "Crossref", orcid: "ORCID", europepmc: "Europe PMC", cordis: "CORDIS", wikidata: "Wikidata", dissertations: "Thesis", nycorp: "NY DOS", edgar: "SEC", usaspending: "USAspending", clinicaltrials: "ClinicalTrials", yc: "YC", bluesky: "Bluesky", hackernews: "HN" };
   var STAGES = { 1: "Research quality", 2: "Builder", 3: "Commercial pull", 4: "Spinout intent", 5: "Traction", 6: "Track record" };
   var SCHOOLS = ["All", "Columbia", "NYU", "Cornell", "Cornell Tech"];
   var WINDOWS = ["2024–26", "2025–26", "2026"];
@@ -286,8 +287,8 @@
   function meterData(c) {
     var sig = c.signals || [];
     var by = function (f) { return sig.filter(f); };
-    var s1 = by(function (s) { return +s.stage === 1; }), s2 = by(function (s) { return +s.stage === 2 || s.source === "github"; });
-    var s3 = by(function (s) { return +s.stage === 3; }), s4 = by(function (s) { return +s.stage >= 4; });
+    var s1 = by(function (s) { return +s.stage === 1 || +s.stage === 6; }), s2 = by(function (s) { return +s.stage === 2 || s.source === "github"; });
+    var s3 = by(function (s) { return +s.stage === 3; }), s4 = by(function (s) { return +s.stage === 4 || +s.stage === 5; });
     var m = c.mentions || [];
     return [
       { label: "01 Research", pts: sumW(s1) + (c.works || []).length * 3, items: s1, works: c.works || [] },
@@ -309,7 +310,7 @@
   }
 
   /* ---------- evidence ---------- */
-  function sigLi(s) { return '<li><span class="src">' + esc(s.source) + "</span>" + link(s.url, s.label) + (s.date ? ' <span class="tag">' + esc(String(s.date).slice(0, 10)) + "</span>" : "") + "</li>"; }
+  function sigLi(s) { return '<li><span class="src">' + esc(SRC[s.source] || s.source) + "</span>" + link(s.url, s.label) + (s.date ? ' <span class="tag">' + esc(String(s.date).slice(0, 10)) + "</span>" : "") + "</li>"; }
   function workLi(w) {
     var tags = [(w.position ? w.position + " author" : ""), w.year, w.venue, w.citedBy != null ? w.citedBy + " cites" : ""].filter(function (x) { return x != null && x !== ""; }).join(" · ");
     return "<li>" + link(w.url, w.title) + ' <span class="tag">' + esc(tags) + "</span></li>";

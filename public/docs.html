@@ -110,7 +110,7 @@
 
   <header>
     <h1 class="h-display">How Labscout <em>works</em>.</h1>
-    <p class="lead">One orchestrator, nine data sources, four sponsors. Same JSON for app, API and agents.</p>
+    <p class="lead">One orchestrator, 25 public data sources, four sponsors. Same JSON for app, API and agents.</p>
     <div class="facts">
       <span class="pill">0 npm dependencies</span>
       <span class="pill">No build step</span>
@@ -145,13 +145,13 @@
       <div class="fan">
         <div class="grp"><p class="label">Research data</p><div class="tags"><span class="pill ok">OpenAlex</span><span class="pill ok">ORCID</span></div></div>
         <div class="grp"><p class="label">LLM</p><div class="tags"><span class="pill hi">NicrronNinoo</span></div></div>
-        <div class="grp wide"><p class="label">Signal plugins · lib/sources/*</p><div class="tags">
-          <span class="pill ok">GitHub</span><span class="pill ok">arXiv</span><span class="pill ok">Semantic Scholar</span><span class="pill ok">NSF</span><span class="pill">PatentsView<b>*</b></span><span class="pill">SBIR<b>*</b></span></div></div>
+        <div class="grp wide"><p class="label">Signal plugins · lib/sources/* · 23 sources, 2 waves</p><div class="tags">
+          <span class="pill ok">GitHub</span><span class="pill ok">arXiv</span><span class="pill ok">Semantic Scholar</span><span class="pill ok">Europe PMC</span><span class="pill ok">Crossref</span><span class="pill ok">ORCID</span><span class="pill ok">Wikidata</span><span class="pill ok">Dissertations</span><span class="pill ok">Hugging Face</span><span class="pill ok">Zenodo</span><span class="pill ok">NSF</span><span class="pill ok">NIH</span><span class="pill ok">CORDIS</span><span class="pill ok">NY corporations</span><span class="pill ok">SEC Form D</span><span class="pill ok">ClinicalTrials.gov</span><span class="pill ok">PyPI / npm<b>²</b></span><span class="pill ok">USAspending<b>²</b></span><span class="pill ok">Y Combinator<b>²</b></span><span class="pill ok">Bluesky<b>²</b></span><span class="pill ok">Hacker News<b>²</b></span><span class="pill">PatentsView<b>*</b></span><span class="pill">SBIR<b>*</b></span></div></div>
         <div class="grp"><p class="label">News</p><div class="tags"><span class="pill hi">akta.pro</span></div></div>
         <div class="grp"><p class="label">Store + traces</p><div class="tags"><span class="pill hi">Roundtable</span><span class="pill hi">PRISM</span></div></div>
       </div>
     </div>
-    <p class="note"><span><i class="sw d"></i>Labscout code</span><span><i class="sw"></i>External service</span><span><i class="sw h"></i>Sponsor</span><span><i class="dot ok"></i>Live public API</span><span>* Built, upstream paused</span></p>
+    <p class="note"><span><i class="sw d"></i>Labscout code</span><span><i class="sw"></i>External service</span><span><i class="sw h"></i>Sponsor</span><span><i class="dot ok"></i>Live public API</span><span>² Wave 2: reads wave-1 handles</span><span>* Built, upstream paused</span></p>
   </section>
 
   <section class="section" aria-labelledby="h-sig">
@@ -208,11 +208,12 @@ cd labscout
 node scripts/dev.ts">git clone https://github.com/jakdemir/labscout
 <span class="c"># .env.local: NICRRON_API_KEY (required), AKTA_API_KEY,</span>
 <span class="c"># PRISMTRACE_API_KEY, PRISMTRACE_PROJECT_ID, ROUNDTABLE_KEY</span>
+<span class="c"># optional: GITHUB_TOKEN, S2_API_KEY, NY_SOCRATA_APP_TOKEN</span>
 cd labscout; node scripts/dev.ts   <span class="c"># localhost:3000</span></pre>
       <dl class="fmap">
         <dt><code>lib/search.ts</code></dt><dd>Pipeline orchestrator</dd>
         <dt><code>lib/score.ts</code></dt><dd>Ranking rules, unit-tested</dd>
-        <dt><code>lib/sources/*.ts</code></dt><dd>One file per signal source</dd>
+        <dt><code>lib/sources/*.ts</code></dt><dd>One file per signal source (catalog: <code>docs/SOURCES.md</code>)</dd>
         <dt><code>lib/llm.ts</code> · <code>prism.ts</code> · <code>akta.ts</code> · <code>roundtable.ts</code></dt><dd>One file per sponsor</dd>
         <dt><code>lib/mcp.ts</code></dt><dd>MCP server (JSON-RPC 2.0)</dd>
         <dt><code>public/*.html</code></dt><dd>These three tabs</dd>
@@ -242,12 +243,12 @@ cd labscout; node scripts/dev.ts   <span class="c"># localhost:3000</span></pre>
 
   // stages (docs/SOURCES.md); s: 1 live, 0 needs key / paused
   var STAGES = [
-    { t: "Research quality", live: [["OpenAlex", 1], ["ORCID", 1], ["arXiv", 1], ["Semantic Scholar", 1]], road: "OpenReview, NSF GRFP" },
-    { t: "Builder signal", live: [["GitHub", 1]], road: "Hugging Face, releases" },
-    { t: "Commercial pull", live: [], road: "Corporate co-authors, Lens.org, SAM.gov" },
-    { t: "Spinout intent", live: [["NSF I-Corps / SBIR", 1], ["PatentsView", 0], ["SBIR.gov", 0]], road: "SEC Form D, NY DOS", strong: 1 },
-    { t: "Early traction", live: [["akta.pro news", 1]], road: "Job posts, openFDA" },
-    { t: "Track record", live: [["NSF grants", 1]], road: "NIH RePORTER, USAspending" },
+    { t: "Research quality", live: [["OpenAlex", 1], ["ORCID", 1], ["arXiv", 1], ["Semantic Scholar", 1], ["Europe PMC", 1], ["NIH F-fellowships", 1]], road: "OpenReview (login wall), NSF GRFP list" },
+    { t: "Builder signal", live: [["GitHub", 1], ["Hugging Face", 1], ["PyPI / npm", 1], ["Zenodo", 1]], road: "GitHub releases cadence" },
+    { t: "Commercial pull", live: [["Crossref funders", 1], ["ORCID industry roles", 1], ["ClinicalTrials.gov", 1], ["Bluesky", 1]], road: "Lens.org, SAM.gov, standards bodies" },
+    { t: "Spinout intent", live: [["NSF I-Corps / SBIR", 1], ["NIH SBIR", 1], ["NY corporations", 1], ["SEC Form D", 1], ["Dissertation deposited", 1], ["ORCID founder role", 1], ["Bluesky launch posts", 1], ["PatentsView", 0], ["SBIR.gov", 0]], road: "Co-founder co-appearance, tech-transfer portfolios", strong: 1 },
+    { t: "Early traction", live: [["akta.pro news", 1], ["Y Combinator", 1], ["Hacker News", 1], ["USAspending", 1], ["Industry trials", 1]], road: "Job posts, openFDA" },
+    { t: "Track record", live: [["NSF grants", 1], ["NIH grants", 1], ["CORDIS", 1], ["Wikidata awards", 1]], road: "ARPA-E" },
   ];
   $("ladder").innerHTML = STAGES.map(function (s, i) {
     var tags = s.live.map(function (x) { return '<span class="pill' + (x[1] ? " ok" : "") + '">' + E(x[0]) + "</span>"; }).join("");
@@ -264,7 +265,7 @@ cd labscout; node scripts/dev.ts   <span class="c"># localhost:3000</span></pre>
     ["Current student / education ended", "ORCID", "+15 / −15", ""],
     ["Momentum: share of papers in last 2 years", "OpenAlex", "up to +10", "pos"],
     ["Established author: over 30 papers, or publishing before 2018", "OpenAlex", "up to −20, −10", "neg"],
-    ["Founder signals, per source", "lib/sources", "cap +15", "pos"],
+    ["Founder signals: 23 sources, name + institution/paper match required", "lib/sources", "cap +15 each", "pos"],
   ];
   $("rank").tBodies[0].innerHTML = RULES.map(function (r) {
     return "<tr><td>" + E(r[0]) + '</td><td class="src">' + E(r[1]) + '</td><td class="num">' + E(r[2]) + "</td></tr>";
