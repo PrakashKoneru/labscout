@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hackathon · Labscout</title>
+<link rel="preload" href="/fonts/inter-tight-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/labscout.css">
+<style>
+  .stats { list-style: none; margin: 32px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: var(--bw) solid var(--ink); border-radius: var(--r); overflow: hidden; background: var(--sheet); }
+  .stats li { padding: 14px 16px 16px; border-right: var(--bw) solid var(--ink); display: grid; gap: 10px; min-width: 0; }
+  .stats li:last-child { border-right: 0; }
+  .stats .val { font: 700 30px/1 var(--sans); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+  .stats .val small { font: 400 12px var(--mono); letter-spacing: 0; color: var(--ink-2); margin-left: 6px; }
+
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 28px; }
+  .bar input[type=search] { flex: 1 1 240px; min-width: 0; height: 40px; padding: 0 14px; border-radius: var(--r); border: var(--bw) solid var(--ink); background: var(--sheet); font: 400 14px var(--sans); }
+  .bar .grp { display: flex; gap: 6px; flex-wrap: wrap; }
+  .meta { margin: 12px 0 0; font: 400 12px var(--mono); color: var(--ink-2); }
+
+  .list { list-style: none; margin: 18px 0 0; padding: 0; border: var(--bw) solid var(--ink); border-radius: var(--r-lg); background: var(--sheet); overflow: hidden; }
+  .row { border-top: 1px solid var(--hair); }
+  .row:first-child { border-top: 0; }
+  .row > details > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 56px minmax(0, 1.4fr) minmax(0, 1.6fr) 96px 72px; gap: 14px; align-items: center; padding: 12px 18px; }
+  .row > details > summary::-webkit-details-marker { display: none; }
+  .row > details > summary:hover { background: #FBFBF6; }
+  .row > details[open] > summary { background: var(--hi); }
+  .rk { font: 700 20px/1 var(--sans); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .who b { display: block; font: 600 15px/1.25 var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who span, .org span { display: block; font: 400 12px/1.4 var(--mono); color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .org b { display: block; font: 500 13.5px/1.3 var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sc { text-align: right; font: 700 22px/1 var(--sans); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .sc small { display: block; margin-top: 4px; font: 400 11px var(--mono); letter-spacing: 0; color: var(--ink-2); }
+  .zero .sc, .zero .rk { color: var(--ink-3); }
+  .det { padding: 4px 18px 18px 88px; display: grid; gap: 12px; font-size: 14px; }
+  .det .brief { white-space: pre-line; max-width: 72ch; }
+  .det ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .det li { display: flex; gap: 10px; align-items: baseline; min-width: 0; }
+  .det li .src { flex: none; width: 96px; font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); }
+  .det li a, .det li span.l { min-width: 0; overflow-wrap: anywhere; }
+  .det .why { font: 400 12px/1.5 var(--mono); color: var(--ink-2); }
+  .det .links { display: flex; gap: 14px; flex-wrap: wrap; font: 400 12.5px var(--mono); }
+  .det .links a { display: inline-flex; gap: 5px; align-items: center; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .teams .row > details > summary { grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1.6fr) 96px 72px; }
+  .empty { padding: 28px 18px; color: var(--ink-2); font: 400 13px var(--mono); }
+  .how { margin-top: 56px; }
+  .how ol { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 6px; max-width: 76ch; color: var(--ink-2); }
+
+  @media (max-width: 760px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .stats li:nth-child(2) { border-right: 0; }
+    .stats li:nth-child(-n+2) { border-bottom: var(--bw) solid var(--ink); }
+    .row > details > summary, .teams .row > details > summary { grid-template-columns: 40px minmax(0, 1fr) 64px; padding: 12px 14px; }
+    .row .org, .row .ty { display: none; }
+    .det { padding: 4px 14px 16px; }
+  }
+</style>
+</head>
+<body>
+<div id="ls-top"></div>
+<main class="page">
+<div class="wrap">
+
+  <h1 class="h-display">Every attendee. <em>Ranked.</em></h1>
+  <p class="lead" id="lead">Deal Flow NYC hackathon roster, batch-run through Labscout&rsquo;s founder-signal sources.</p>
+
+  <ul class="stats" aria-live="polite">
+    <li><span class="label">Attendees</span><span class="val" id="s-n">–</span></li>
+    <li><span class="label">With public evidence</span><span class="val" id="s-ev">–</span></li>
+    <li><span class="label">Teams</span><span class="val" id="s-t">–</span></li>
+    <li><span class="label">Sources run</span><span class="val" id="s-src">–</span></li>
+  </ul>
+
+  <div class="bar">
+    <div class="grp" role="group" aria-label="View">
+      <button class="chip" type="button" data-view="people" aria-pressed="true">People</button>
+      <button class="chip" type="button" data-view="teams" aria-pressed="false">Teams</button>
+    </div>
+    <label class="sr" for="q">Filter</label>
+    <input id="q" type="search" placeholder="Filter by name, team, company, skill…" autocomplete="off">
+  </div>
+  <div class="bar" id="pfilters">
+    <div class="grp" role="group" aria-label="Type" id="types"></div>
+    <button class="chip" type="button" id="evonly" aria-pressed="false">Evidence only</button>
+  </div>
+  <p class="meta" id="meta"></p>
+
+  <ol class="list" id="list" aria-live="polite"><li class="empty">Loading ranked roster…</li></ol>
+
+  <section class="how">
+    <h2 class="h2">How the ranking works</h2>
+    <ol>
+      <li>Roster pulled from the organizers&rsquo; public team sheet. Emails are used for matching only and never published.</li>
+      <li>GitHub identity first: an account whose public email matches the registration, or whose handle and name match the LinkedIn slug.</li>
+      <li>Then the same founder-signal sources as Scout: GitHub, Hugging Face, PyPI/npm, Hacker News, YC, ORCID, NSF, NIH, arXiv, SEC Form D, NY corporations and more.</li>
+      <li>Strict matching. Common names (25+ ORCID namesakes) keep only handle-verified evidence. Company registries count only when the filing names the attendee&rsquo;s own company.</li>
+      <li>Score = sum of signal weights, capped at 15 per source. Same scorer as Scout, no seniority penalty. No evidence = 0, not &ldquo;bad&rdquo;.</li>
+      <li>Team score = sum of the top 3 member scores.</li>
+    </ol>
+  </section>
+
+</div>
+</main>
+<div id="ls-foot"></div>
+<script src="/assets/shell.js"></script>
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); };
+  var esc = LS.esc, url = LS.safeUrl;
+  var D = null, view = "people", type = "All", evOnly = false;
+  var TYPES = ["All", "Founder", "Engineer", "Student", "Operator", "Investor"];
+
+  $("#types").innerHTML = TYPES.map(function (t) { return '<button class="chip" type="button" data-type="' + t + '" aria-pressed="' + (t === "All") + '">' + t + "</button>"; }).join("");
+
+  function n(v) { return Number(v || 0).toLocaleString("en-US"); }
+  function hay(p) { return [p.name, p.teamName, p.theme, p.org, p.title, p.type, (p.skills || []).join(" "), "team " + p.team].join(" ").toLowerCase(); }
+
+  function personRow(p) {
+    var sig = (p.signals || []).filter(function (s) { return s.weight > 0 || s.kind === "profile"; });
+    var li = url(p.linkedin);
+    var det = '<div class="det">' +
+      (p.brief ? '<p class="brief" style="margin:0">' + esc(p.brief) + "</p>" : "") +
+      (sig.length ? "<ul>" + sig.map(function (s) {
+        var u = url(s.url);
+        return '<li><span class="src">' + esc(s.source) + "</span>" + (u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(s.label) + "</a>" : '<span class="l">' + esc(s.label) + "</span>") + "</li>";
+      }).join("") + "</ul>" : '<p class="muted" style="margin:0">No public founder signals matched' + (p.commonName ? " (common name: only handle-verified sources count)" : "") + ".</p>") +
+      ((p.reasons || []).length ? '<div class="why">' + p.reasons.map(esc).join("<br>") + "</div>" : "") +
+      '<div class="tags">' + (p.skills || []).map(function (s) { return '<span class="pill">' + esc(s) + "</span>"; }).join("") + (p.commonName ? '<span class="pill">common name · strict</span>' : "") + "</div>" +
+      '<div class="links">' + (li ? '<a href="' + esc(li) + '" target="_blank" rel="noopener">LinkedIn' + LS.icon("ext", 13) + "</a>" : "") + "</div>" +
+      "</div>";
+    return '<li class="row' + (p.score > 0 ? "" : " zero") + '"><details><summary>' +
+      '<span class="rk">' + esc(p.rank) + "</span>" +
+      '<span class="who"><b>' + esc(p.name) + "</b><span>Team " + esc(p.team == null ? "–" : p.team) + " · " + esc(p.teamName) + "</span></span>" +
+      '<span class="org"><b>' + esc(p.title || "–") + "</b><span>" + esc(p.org || "–") + "</span></span>" +
+      '<span class="ty"><span class="pill">' + esc(p.type || "–") + "</span></span>" +
+      '<span class="sc">' + esc(p.score) + "<small>" + sig.length + " signal" + (sig.length === 1 ? "" : "s") + "</small></span>" +
+      "</summary>" + det + "</details></li>";
+  }
+
+  function teamRow(t, i, members) {
+    var det = '<div class="det"><p style="margin:0">' + esc(t.theme || "") + "</p><ul>" + members.map(function (p) {
+      return '<li><span class="src">#' + esc(p.rank) + " · " + esc(p.score) + '</span><span class="l">' + esc(p.name) + " — " + esc(p.title || p.type || "") + (p.org ? ", " + esc(p.org) : "") + "</span></li>";
+    }).join("") + "</ul></div>";
+    return '<li class="row' + (t.score > 0 ? "" : " zero") + '"><details><summary>' +
+      '<span class="rk">' + (i + 1) + "</span>" +
+      '<span class="who"><b>' + esc(t.teamName || "Team " + t.team) + "</b><span>Team " + esc(t.team) + " · " + esc(t.members) + " members</span></span>" +
+      '<span class="org"><b>' + esc(t.theme || "–") + "</b><span>Top: " + esc(t.top) + "</span></span>" +
+      '<span class="ty"><span class="pill">' + esc(t.withSignals) + "/" + esc(t.members) + " w/ evidence</span></span>" +
+      '<span class="sc">' + esc(t.score) + "<small>top-3 sum</small></span>" +
+      "</summary>" + det + "</details></li>";
+  }
+
+  function render() {
+    if (!D) return;
+    var q = $("#q").value.trim().toLowerCase();
+    var list = $("#list");
+    $("#pfilters").style.display = view === "people" ? "" : "none";
+    list.classList.toggle("teams", view === "teams");
+    if (view === "people") {
+      var ps = D.attendees.filter(function (p) {
+        return (type === "All" || p.type === type) && (!evOnly || p.score > 0) && (!q || hay(p).indexOf(q) >= 0);
+      });
+      $("#meta").textContent = ps.length + " of " + D.attendees.length + " shown · ties share a rank · click a row for evidence";
+      list.innerHTML = ps.length ? ps.map(personRow).join("") : '<li class="empty">No attendees match.</li>';
+    } else {
+      var by = {};
+      D.attendees.forEach(function (p) { if (p.team != null) (by[p.team] = by[p.team] || []).push(p); });
+      var ts = D.teams.filter(function (t) { return !q || [t.teamName, t.theme, "team " + t.team, (by[t.team] || []).map(function (p) { return p.name; }).join(" ")].join(" ").toLowerCase().indexOf(q) >= 0; });
+      $("#meta").textContent = ts.length + " of " + D.teams.length + " teams · ranked by the sum of their top 3 members";
+      list.innerHTML = ts.length ? ts.map(function (t) { return teamRow(t, D.teams.indexOf(t), (by[t.team] || []).slice().sort(function (a, b) { return b.score - a.score; })); }).join("") : '<li class="empty">No teams match.</li>';
+    }
+  }
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-view],[data-type],#evonly");
+    if (!b) return;
+    if (b.dataset.view) { view = b.dataset.view; document.querySelectorAll("[data-view]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); }
+    else if (b.dataset.type) { type = b.dataset.type; document.querySelectorAll("[data-type]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); }
+    else { evOnly = !evOnly; b.setAttribute("aria-pressed", String(evOnly)); }
+    render();
+  });
+  $("#q").addEventListener("input", render);
+
+  fetch("/data/hackathon.json").then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then(function (d) {
+    D = d;
+    $("#s-n").innerHTML = n(d.count);
+    $("#s-ev").innerHTML = n(d.withSignals) + "<small>" + Math.round(100 * d.withSignals / Math.max(1, d.count)) + "%</small>";
+    $("#s-t").innerHTML = n(d.teams.length);
+    $("#s-src").innerHTML = n((d.sources || []).length) + "<small>+ GitHub ID</small>";
+    $("#lead").textContent = (d.event || "Hackathon") + " roster, batch-run through Labscout’s founder-signal sources. Updated " +
+      new Date(d.generatedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) + ".";
+    render();
+  }).catch(function (err) { $("#list").innerHTML = '<li class="empty">Could not load the ranking: ' + esc(err.message) + "</li>"; });
+})();
+</script>
+</body>
+</html>

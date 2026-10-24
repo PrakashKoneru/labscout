@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Labscout — Architecture &amp; API</title>
+<meta name="description" content="How Labscout works: architecture, founder-signal sources, ranking, REST API and MCP endpoint.">
+<link rel="preload" href="/fonts/instrument-serif-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/labscout.css">
+<style>
+  .facts { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* architecture diagram: dark = Labscout code, outlined = external, yellow = sponsor */
+  .arch { margin-top: 22px; padding: 28px; display: grid; grid-template-columns: minmax(0, .8fr) 28px minmax(0, .9fr) 28px minmax(0, .9fr) 28px minmax(0, 1.9fr); align-items: center; }
+  .col { display: flex; flex-direction: column; gap: 8px; }
+  .col > .label { margin: 0 0 2px; }
+  .node { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: var(--bw) solid var(--ink); border-radius: var(--r); background: var(--sheet); font: 500 12.5px/1.2 var(--mono); }
+  .node svg { flex: none; }
+  .node.own { background: var(--dark); color: var(--on-dark); border-color: var(--dark); }
+  .node.own code { font-size: 12.5px; }
+  .node.core { flex-direction: column; align-items: flex-start; gap: 6px; padding: 18px 16px; }
+  .node.core code { font-size: 14px; font-weight: 600; }
+  .node.core span { font: 400 12px/1.4 var(--sans); color: var(--on-dark-2); }
+  .link { display: grid; place-items: center; }
+  .link svg { width: 20px; height: 20px; }
+  .fan { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grp { border: var(--bw) solid var(--ink); border-radius: var(--r); padding: 12px; background: var(--paper); }
+  .grp.wide { grid-column: 1 / -1; }
+  .grp .label { margin: 0 0 8px; }
+  .grp.own-grp { background: var(--sheet); }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill b { font-weight: 400; margin-left: 1px; }
+  .note { margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font: 400 12px/1.3 var(--mono); color: var(--ink-2); }
+  .note span { display: inline-flex; align-items: center; gap: 8px; }
+  .sw { width: 14px; height: 14px; border: var(--bw) solid var(--ink); border-radius: 3px; display: inline-block; }
+  .sw.d { background: var(--dark); } .sw.h { background: var(--hi); }
+
+  /* stage meter, 6 cells */
+  .meters.six { grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--sheet); }
+  .meters.six .meter { align-content: start; gap: 12px; padding: 14px; }
+  .meter .n { font: 700 34px/1 var(--sans); letter-spacing: -.04em; }
+  .meter .road { margin: 0; font-size: 12.5px; color: var(--ink-3); line-height: 1.4; }
+  .meter.dark { color: var(--on-dark); }
+  .meter.dark .road { color: var(--on-dark-2); }
+  .meter.dark .pill { color: var(--on-dark); border-color: var(--on-dark); }
+  .meter.dark .pill.ok { color: var(--ok); border-color: var(--ok); }
+  .meter .none { font-size: 12.5px; color: var(--ink-3); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; font-size: 13px; color: var(--ink-3); }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+
+  /* ranking */
+  .rank { max-width: 760px; background: transparent; }
+  .rank td.num { white-space: nowrap; font-weight: 600; text-align: right; width: 130px; padding-right: 0; }
+  .rank th:last-child { text-align: right; padding-right: 0; }
+  .rank td.src { font: 400 12px/1.5 var(--mono); color: var(--ink-2); }
+
+  /* API panels */
+  .api { margin-top: 22px; align-items: start; }
+  .card { padding: 22px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .card-h { display: flex; align-items: center; gap: 10px; }
+  .card-h .h2 { margin: 0; }
+  .card-h .pill { margin-left: auto; }
+  .url { font-size: 13px; word-break: break-all; padding: 8px 10px; border: var(--bw) solid var(--ink); border-radius: 4px; background: var(--paper); }
+  .card > p { margin: 0; color: var(--ink-2); font-size: 14px; }
+  .seg { display: inline-flex; flex-wrap: wrap; gap: 6px; align-self: flex-start; }
+  .seg button { height: 30px; padding: 0 12px; border: var(--bw) solid var(--ink); border-radius: 999px; background: transparent; color: var(--ink); font: 500 12px/1 var(--mono); cursor: pointer; }
+  .seg button:hover { background: var(--paper); }
+  .seg button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+  .panel[hidden] { display: none; }
+  pre[data-copy] { padding-top: 40px; }
+  .ping { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+  .ping-out { color: var(--ink-2); display: inline-flex; align-items: center; gap: 8px; }
+  .ping-out.err { color: var(--bad); }
+
+  /* run locally */
+  .run { margin-top: 22px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+  .fmap { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 0 18px; font-size: 14px; border-top: var(--bw) solid var(--ink); }
+  .fmap dt, .fmap dd { padding: 9px 0; border-bottom: 1px solid var(--hair); margin: 0; }
+  .fmap dd { color: var(--ink-2); }
+  .ethics { margin-top: 64px; display: flex; justify-content: center; }
+
+  @media (max-width: 960px) {
+    .arch { grid-template-columns: 1fr; gap: 8px; }
+    .link svg { transform: rotate(90deg); }
+    .col { flex-direction: row; flex-wrap: wrap; }
+    .col > .label { width: 100%; }
+    .col > .node { flex: 1 1 140px; }
+    .meters.six { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .meters.six .meter { border-bottom: var(--bw) solid var(--ink); }
+    .meters.six .meter:nth-child(3n) { border-right: 0; }
+    .meters.six .meter:nth-child(n+4) { border-bottom: 0; }
+    .run { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 620px) {
+    .arch { padding: 18px; }
+    .fan { grid-template-columns: 1fr; }
+    .meters.six { grid-template-columns: 1fr; }
+    .meters.six .meter, .meters.six .meter:nth-child(3n), .meters.six .meter:nth-child(2) { border-right: 0; border-bottom: var(--bw) solid var(--ink); }
+    .meters.six .meter:last-child { border-bottom: 0; }
+    .fmap { grid-template-columns: 1fr; }
+    .fmap dt { border-bottom: 0; padding-bottom: 0; }
+    .ethics .tag-hi { height: auto; padding: 8px 12px; line-height: 1.4; text-align: center; }
+  }
+</style>
+</head>
+<body>
+<div id="ls-top"></div>
+<main class="page">
+<div class="wrap">
+
+  <header>
+    <h1 class="h-display">How Labscout <em>works</em>.</h1>
+    <p class="lead">One orchestrator, 25 public data sources, four sponsors. Same JSON for app, API and agents.</p>
+    <div class="facts">
+      <span class="pill">0 npm dependencies</span>
+      <span class="pill">No build step</span>
+      <span class="pill">10–20 s per search</span>
+      <span class="pill">Every step fails safe</span>
+    </div>
+  </header>
+
+  <section class="section" aria-labelledby="h-arch">
+    <h2 class="h2" id="h-arch">Architecture</h2>
+    <p>Three clients, three functions, one pipeline fanning out in parallel.</p>
+    <div class="sheet lift arch" id="arch" role="img" aria-label="Clients call Vercel functions, which run lib/search.ts. It fans out to research data, signal plugins and four sponsors.">
+      <div class="col">
+        <p class="label">Clients</p>
+        <div class="node" data-i="chat">Browser</div>
+        <div class="node" data-i="spark">MCP client</div>
+        <div class="node" data-i="code">REST client</div>
+      </div>
+      <div class="link" data-i="arrow"></div>
+      <div class="col">
+        <p class="label">Vercel functions</p>
+        <div class="node own"><code>api/search.ts</code></div>
+        <div class="node own"><code>api/mcp.ts</code></div>
+        <div class="node own"><code>api/status.ts</code></div>
+      </div>
+      <div class="link" data-i="arrow"></div>
+      <div class="col">
+        <p class="label">Orchestrator</p>
+        <div class="node own core"><code>lib/search.ts</code><span>keywords → papers → signals → rank → briefs</span></div>
+      </div>
+      <div class="link" data-i="arrow"></div>
+      <div class="fan">
+        <div class="grp"><p class="label">Research data</p><div class="tags"><span class="pill ok">OpenAlex</span><span class="pill ok">ORCID</span></div></div>
+        <div class="grp"><p class="label">LLM</p><div class="tags"><span class="pill hi">NicrronNinoo</span></div></div>
+        <div class="grp wide"><p class="label">Signal plugins · lib/sources/* · 23 sources, 2 waves</p><div class="tags">
+          <span class="pill ok">GitHub</span><span class="pill ok">arXiv</span><span class="pill ok">Semantic Scholar</span><span class="pill ok">Europe PMC</span><span class="pill ok">Crossref</span><span class="pill ok">ORCID</span><span class="pill ok">Wikidata</span><span class="pill ok">Dissertations</span><span class="pill ok">Hugging Face</span><span class="pill ok">Zenodo</span><span class="pill ok">NSF</span><span class="pill ok">NIH</span><span class="pill ok">CORDIS</span><span class="pill ok">NY corporations</span><span class="pill ok">SEC Form D</span><span class="pill ok">ClinicalTrials.gov</span><span class="pill ok">PyPI / npm<b>²</b></span><span class="pill ok">USAspending<b>²</b></span><span class="pill ok">Y Combinator<b>²</b></span><span class="pill ok">Bluesky<b>²</b></span><span class="pill ok">Hacker News<b>²</b></span><span class="pill">PatentsView<b>*</b></span><span class="pill">SBIR<b>*</b></span></div></div>
+        <div class="grp"><p class="label">News</p><div class="tags"><span class="pill hi">akta.pro</span></div></div>
+        <div class="grp"><p class="label">Store + traces</p><div class="tags"><span class="pill hi">Roundtable</span><span class="pill hi">PRISM</span></div></div>
+      </div>
+    </div>
+    <p class="note"><span><i class="sw d"></i>Labscout code</span><span><i class="sw"></i>External service</span><span><i class="sw h"></i>Sponsor</span><span><i class="dot ok"></i>Live public API</span><span>² Wave 2: reads wave-1 handles</span><span>* Built, upstream paused</span></p>
+  </section>
+
+  <section class="section" aria-labelledby="h-sig">
+    <h2 class="h2" id="h-sig">Founder signals</h2>
+    <p>Six stages, earliest first. Stage 4 is the strongest signal.</p>
+    <div class="meters six" id="ladder" role="list"></div>
+    <div class="legend"><span><span class="pill ok">Live</span></span><span><span class="pill">Needs key or paused</span></span><span>Grey text: roadmap</span></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-rank">
+    <h2 class="h2" id="h-rank">How a student is ranked</h2>
+    <p>Deterministic points. Every reason ships with the result.</p>
+    <table class="t rank" id="rank"><thead><tr><th>Rule</th><th>Source</th><th style="text-align:right">Points</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section class="section" aria-labelledby="h-api">
+    <h2 class="h2" id="h-api">Use the API</h2>
+    <p>No auth. Allow up to 60 s. Same pipeline as the app.</p>
+    <div class="grid-2 api">
+      <article class="sheet card">
+        <div class="card-h"><span data-i="code" data-s="20"></span><h3 class="h2">REST</h3><span class="pill">POST</span></div>
+        <code class="url">https://labscout-nyc.vercel.app/api/search</code>
+        <pre data-copy="curl -s -X POST https://labscout-nyc.vercel.app/api/search -H 'content-type: application/json' -d '{&quot;q&quot;:&quot;AI for drug discovery&quot;,&quot;criteria&quot;:[&quot;open-source builder&quot;]}'">curl -s -X POST https://labscout-nyc.vercel.app/api/search \
+  -H 'content-type: application/json' \
+  -d '{"q":"AI for drug discovery","criteria":["open-source builder"]}'</pre>
+        <pre>{ "keywords": "drug discovery machine learning",
+  "candidates": [{ "name", "score", "reasons", "brief",
+    "isCurrentStudent", "works", "signals", "fit", "orcid" }],
+  "market": [{ "title", "url", "summary" }],
+  "roundtable": { "path", "version" },
+  "changes": { "added", "dropped", "kept", "prevAt" },
+  "integrations": { "nicrron", "prism", "akta", "roundtable" } }</pre>
+      </article>
+
+      <article class="sheet card">
+        <div class="card-h"><span data-i="plug" data-s="20"></span><h3 class="h2">MCP</h3><span class="pill">Streamable HTTP</span></div>
+        <code class="url">https://labscout-nyc.vercel.app/api/mcp</code>
+        <p>Tool <code>search_students(query, limit 1–10)</code> returns markdown plus JSON.</p>
+        <div class="seg" role="tablist" aria-label="MCP client" id="seg"></div>
+        <div id="panels"></div>
+        <div class="ping">
+          <button class="btn ghost" type="button" id="ping"><span data-i="send"></span>Test tools/list</button>
+          <span class="ping-out" id="ping-out" aria-live="polite"></span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-run">
+    <h2 class="h2" id="h-run">Run locally</h2>
+    <p>Node 22.6+ runs the TypeScript directly. Tests: <code>node --test tests/*.test.ts</code></p>
+    <div class="run">
+      <pre data-copy="git clone https://github.com/jakdemir/labscout
+cd labscout
+node scripts/dev.ts">git clone https://github.com/jakdemir/labscout
+<span class="c"># .env.local: NICRRON_API_KEY (required), AKTA_API_KEY,</span>
+<span class="c"># PRISMTRACE_API_KEY, PRISMTRACE_PROJECT_ID, ROUNDTABLE_KEY</span>
+<span class="c"># optional: GITHUB_TOKEN, S2_API_KEY, NY_SOCRATA_APP_TOKEN</span>
+cd labscout; node scripts/dev.ts   <span class="c"># localhost:3000</span></pre>
+      <dl class="fmap">
+        <dt><code>lib/search.ts</code></dt><dd>Pipeline orchestrator</dd>
+        <dt><code>lib/score.ts</code></dt><dd>Ranking rules, unit-tested</dd>
+        <dt><code>lib/sources/*.ts</code></dt><dd>One file per signal source (catalog: <code>docs/SOURCES.md</code>)</dd>
+        <dt><code>lib/llm.ts</code> · <code>prism.ts</code> · <code>akta.ts</code> · <code>roundtable.ts</code></dt><dd>One file per sponsor</dd>
+        <dt><code>lib/mcp.ts</code></dt><dd>MCP server (JSON-RPC 2.0)</dd>
+        <dt><code>public/*.html</code></dt><dd>These three tabs</dd>
+      </dl>
+    </div>
+  </section>
+
+  <p class="ethics"><span class="tag-hi">No LinkedIn, no Google Scholar scraping — public APIs only.</span></p>
+
+</div>
+</main>
+<div id="ls-foot"></div>
+<script src="/assets/shell.js"></script>
+<script>
+(function () {
+  var I = LS.icon, E = LS.esc;
+  var BASE = "https://labscout-nyc.vercel.app";
+  function $(id) { return document.getElementById(id); }
+
+  // inline icons
+  document.querySelectorAll("[data-i]").forEach(function (el) {
+    var svg = I(el.getAttribute("data-i"), Number(el.getAttribute("data-s")) || 16);
+    if (el.classList.contains("node") || el.tagName === "BUTTON") el.insertAdjacentHTML("afterbegin", svg);
+    else if (el.classList.contains("link")) el.innerHTML = svg;
+    else el.outerHTML = svg;
+  });
+
+  // stages (docs/SOURCES.md); s: 1 live, 0 needs key / paused
+  var STAGES = [
+    { t: "Research quality", live: [["OpenAlex", 1], ["ORCID", 1], ["arXiv", 1], ["Semantic Scholar", 1], ["Europe PMC", 1], ["NIH F-fellowships", 1]], road: "OpenReview (login wall), NSF GRFP list" },
+    { t: "Builder signal", live: [["GitHub", 1], ["Hugging Face", 1], ["PyPI / npm", 1], ["Zenodo", 1]], road: "GitHub releases cadence" },
+    { t: "Commercial pull", live: [["Crossref funders", 1], ["ORCID industry roles", 1], ["ClinicalTrials.gov", 1], ["Bluesky", 1]], road: "Lens.org, SAM.gov, standards bodies" },
+    { t: "Spinout intent", live: [["NSF I-Corps / SBIR", 1], ["NIH SBIR", 1], ["NY corporations", 1], ["SEC Form D", 1], ["Dissertation deposited", 1], ["ORCID founder role", 1], ["Bluesky launch posts", 1], ["PatentsView", 0], ["SBIR.gov", 0]], road: "Co-founder co-appearance, tech-transfer portfolios", strong: 1 },
+    { t: "Early traction", live: [["akta.pro news", 1], ["Y Combinator", 1], ["Hacker News", 1], ["USAspending", 1], ["Industry trials", 1]], road: "Job posts, openFDA" },
+    { t: "Track record", live: [["NSF grants", 1], ["NIH grants", 1], ["CORDIS", 1], ["Wikidata awards", 1]], road: "ARPA-E" },
+  ];
+  $("ladder").innerHTML = STAGES.map(function (s, i) {
+    var tags = s.live.map(function (x) { return '<span class="pill' + (x[1] ? " ok" : "") + '">' + E(x[0]) + "</span>"; }).join("");
+    return '<div class="meter settle' + (s.strong ? " dark" : "") + '" role="listitem" style="--i:' + i + '"><span class="label">0' + (i + 1) + " " + E(s.t) + (s.strong ? " · ×weight" : "") + "</span>" +
+      '<div class="tags">' + (tags || '<span class="none">No live source yet</span>') + "</div>" +
+      '<p class="road">Next: ' + E(s.road) + "</p></div>";
+  }).join("");
+
+  // ranking rules (lib/score.ts)
+  var RULES = [
+    ["Matching paper, first / middle / last author", "OpenAlex", "+10 / +3 / +1", "pos"],
+    ["Citations per paper (0.25 each, max 20)", "OpenAlex", "up to +5", "pos"],
+    ["Paper published 2025 or later", "OpenAlex", "+2", "pos"],
+    ["Current student / education ended", "ORCID", "+15 / −15", ""],
+    ["Momentum: share of papers in last 2 years", "OpenAlex", "up to +10", "pos"],
+    ["Established author: over 30 papers, or publishing before 2018", "OpenAlex", "up to −20, −10", "neg"],
+    ["Founder signals: 23 sources, name + institution/paper match required", "lib/sources", "cap +15 each", "pos"],
+  ];
+  $("rank").tBodies[0].innerHTML = RULES.map(function (r) {
+    return "<tr><td>" + E(r[0]) + '</td><td class="src">' + E(r[1]) + '</td><td class="num">' + E(r[2]) + "</td></tr>";
+  }).join("");
+
+  // MCP client switcher
+  var CLIENTS = [
+    { id: "cc", label: "Claude Code", code: "claude mcp add --transport http labscout " + BASE + "/api/mcp" },
+    { id: "cur", label: "Cursor / Claude Desktop", code: '{ "mcpServers": { "labscout": { "url": "' + BASE + '/api/mcp" } } }' },
+    { id: "her", label: "Hermes", code: "# ~/.hermes/config.yaml\nmcp_servers:\n  labscout:\n    url: " + BASE + "/api/mcp" },
+  ];
+  $("seg").innerHTML = CLIENTS.map(function (c, i) {
+    return '<button type="button" role="tab" id="t-' + c.id + '" aria-controls="p-' + c.id + '" aria-selected="' + (i === 0) + '" tabindex="' + (i === 0 ? 0 : -1) + '">' + E(c.label) + "</button>";
+  }).join("");
+  $("panels").innerHTML = CLIENTS.map(function (c, i) {
+    return '<div class="panel" role="tabpanel" id="p-' + c.id + '" aria-labelledby="t-' + c.id + '"' + (i ? " hidden" : "") + '><pre data-copy="' + E(c.code) + '">' + E(c.code) + "</pre></div>";
+  }).join("");
+  var tabs = Array.prototype.slice.call(document.querySelectorAll("#seg button"));
+  function pick(k) {
+    tabs.forEach(function (b, i) { var on = i === k; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; $("p-" + CLIENTS[i].id).hidden = !on; });
+  }
+  tabs.forEach(function (b, i) {
+    b.onclick = function () { pick(i); };
+    b.onkeydown = function (e) {
+      var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+      if (!d) return; e.preventDefault(); var k = (i + d + tabs.length) % tabs.length; pick(k); tabs[k].focus();
+    };
+  });
+  LS.copyPre();
+
+  // live MCP check
+  var btn = $("ping"), out = $("ping-out");
+  btn.onclick = function () {
+    btn.disabled = true; out.className = "ping-out"; out.textContent = "Calling /api/mcp…";
+    var t0 = performance.now();
+    fetch("/api/mcp", { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }) })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (j) {
+        var tools = (j && j.result && j.result.tools) || [];
+        if (!tools.length) throw new Error("no tools returned");
+        var ms = Math.round(performance.now() - t0);
+        out.innerHTML = '<i class="dot ok"></i><span><code>' + E(tools.map(function (t) { return t.name; }).join(", ")) + '</code> in <span class="num">' + ms + " ms</span></span>";
+      })
+      .catch(function (e) { out.className = "ping-out err"; out.textContent = "MCP unreachable (" + (e.message || "network") + "). Retry."; })
+      .then(function () { btn.disabled = false; });
+  };
+})();
+</script>
+</body>
+</html>

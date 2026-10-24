@@ -11,6 +11,9 @@ export default function MarketingNav({ active }: { active?: Audience }) {
           labscout
         </Link>
         <nav className={styles.links}>
+          <Link href="/signal" className={styles.link}>
+            All Signal
+          </Link>
           <Link
             href="/investors"
             className={active === "investors" ? styles.linkActive : styles.link}
