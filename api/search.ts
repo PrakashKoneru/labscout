@@ -31,7 +31,7 @@ export async function runSearch(q: string): Promise<SearchResponse> {
   const final = top.slice(0, 10);
   await Promise.all([
     ...final.map(async (c) => { try { c.brief = await writeBrief(c, q); } catch { c.brief = null; } }),
-    ...final.slice(0, 5).map(async (c) => { c.mentions = await personMentions(c.name); }),
+    ...final.slice(0, 5).map(async (c) => { c.mentions = (await personMentions(c.name, 3, [...c.institutions, ...keywords.split(/\s+/)])).slice(0, 3); }),
   ]);
   const market = await marketP;
   const roundtable = await saveShortlist(q, keywords, final);

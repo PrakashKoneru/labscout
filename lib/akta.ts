@@ -10,7 +10,7 @@ export function aktaEnabled(): boolean {
 export async function marketSignals(topic: string, limit = 5): Promise<NewsSignal[]> {
   if (!aktaEnabled()) return [];
   try {
-    const u = `https://api.akta.pro/api/v1/news?query=${encodeURIComponent(topic)}&limit=${limit}&unique_article=true&news_score_list=High,Medium`;
+    const u = `https://api.akta.pro/api/v1/news/?query=${encodeURIComponent(topic)}&limit=${limit}&unique_article=true&news_score_list=High,Medium`;
     const r = await fetch(u, { headers: { "x-api-key": process.env.AKTA_API_KEY! }, signal: AbortSignal.timeout(15000) });
     if (!r.ok) return [];
     const d = await r.json();
@@ -29,17 +29,25 @@ export async function marketSignals(topic: string, limit = 5): Promise<NewsSigna
 }
 
 /** Press mentions of a person (entity search). Used for the top candidates only. */
-export async function personMentions(name: string, limit = 3): Promise<NewsSignal[]> {
+/** Keep only articles that also mention the person's university or a thesis keyword — guards against namesakes. */
+export function relevantMention(n: NewsSignal, name: string, context: string[]): boolean {
+  const text = `${n.title} ${n.summary ?? ""}`.toLowerCase();
+  const last = name.trim().split(/\s+/).pop()!.toLowerCase();
+  if (!text.includes(last)) return false;
+  return context.some((c) => c.length > 3 && text.includes(c.toLowerCase()));
+}
+
+export async function personMentions(name: string, limit = 3, context: string[] = []): Promise<NewsSignal[]> {
   if (!aktaEnabled()) return [];
   try {
-    const u = `https://api.akta.pro/api/v1/news?entity_person_list=${encodeURIComponent(name)}&limit=${limit}&unique_article=true`;
+    const u = `https://api.akta.pro/api/v1/news/?entity_person_list=${encodeURIComponent(name)}&limit=${limit * 3}&unique_article=true`;
     const r = await fetch(u, { headers: { "x-api-key": process.env.AKTA_API_KEY! }, signal: AbortSignal.timeout(15000) });
     if (!r.ok) return [];
     const d = await r.json();
     return (d.data ?? []).map((a: any) => ({
       title: a.title ?? "(untitled)", url: a.url ?? "", publisher: a.publisher ?? null, publishedDate: a.published_date ?? null,
       sentiment: a.sentiment ?? null, summary: a.ai_summary ?? null, companies: [],
-    }));
+    })).filter((n: NewsSignal) => context.length === 0 || relevantMention(n, name, context));
   } catch {
     return [];
   }
