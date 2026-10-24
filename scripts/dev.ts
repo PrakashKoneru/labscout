@@ -12,7 +12,7 @@ try {
   }
 } catch {}
 
-const { runSearch } = await import("../api/search.ts");
+const { runSearch } = await import("../lib/search.ts");
 const { handleRpc } = await import("../lib/mcp.ts");
 
 const PUB = new URL("../public/", import.meta.url).pathname;

@@ -1,6 +1,6 @@
 // Labscout MCP endpoint: POST https://labscout-jakdemir.vercel.app/api/mcp
 import { handleRpc } from "../lib/mcp.ts";
-import { runSearch } from "./search.ts";
+import { runSearch } from "../lib/search.ts";
 
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
