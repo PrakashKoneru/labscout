@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "labscout",
-  description: "Frontend, route handlers, and Postgres wired together.",
+  title: "Full Signal — Find what’s forming",
+  description: "An evidence-led research cabinet for finding emerging founders, teams, and ideas.",
 };
 
 export default function RootLayout({

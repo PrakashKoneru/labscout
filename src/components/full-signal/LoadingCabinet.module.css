@@ -1,0 +1,18 @@
+.cabinet {
+  width: min(100%, 760px);
+  margin-inline: auto;
+  background: transparent;
+  isolation: isolate;
+}
+
+.cabinet picture {
+  display: block;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 6 / 5;
+  object-fit: contain;
+}
