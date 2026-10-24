@@ -1,0 +1,44 @@
+/* WiringCheck was written against these names; map them onto the theme tokens. */
+.page {
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --button-secondary-border: var(--border-strong);
+  --button-secondary-hover: var(--surface-raised);
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main {
+  display: flex;
+  width: 100%;
+  max-width: 800px;
+  flex-direction: column;
+  gap: 40px;
+  padding: 80px 28px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.intro h1 {
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.intro p {
+  max-width: 560px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding: 56px 20px;
+  }
+}

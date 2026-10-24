@@ -1,0 +1,486 @@
+.shell {
+  flex: 1;
+  width: 100%;
+}
+
+/* Each page can retint itself without touching anything else. */
+.violet {
+  --accent: #a89bff;
+  --accent-ink: #0b0718;
+  --accent-soft: rgba(168, 155, 255, 0.12);
+  --accent-line: rgba(168, 155, 255, 0.32);
+}
+
+.inner {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* ---------- hero ---------- */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  padding: 104px 0 96px;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -340px;
+  left: 50%;
+  width: 900px;
+  height: 600px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, var(--accent-soft), transparent 68%);
+  pointer-events: none;
+}
+
+.heroBody {
+  position: relative;
+  max-width: 760px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 26px;
+  padding: 6px 13px;
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.headline {
+  font-size: 60px;
+  font-weight: 600;
+}
+
+.headline em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.sub {
+  margin-top: 24px;
+  max-width: 620px;
+  color: var(--muted);
+  font-size: 19px;
+  line-height: 1.65;
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 38px;
+}
+
+.button,
+.buttonGhost {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 500;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.button {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.buttonGhost {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .button:hover {
+    filter: brightness(1.08);
+  }
+
+  .buttonGhost:hover {
+    border-color: var(--accent-line);
+    color: var(--accent);
+  }
+}
+
+/* ---------- sections ---------- */
+
+.section {
+  padding: var(--section-y) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sectionHead {
+  max-width: 660px;
+  margin-bottom: 52px;
+}
+
+.sectionLabel {
+  display: block;
+  margin-bottom: 16px;
+  color: var(--faint);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sectionTitle {
+  font-size: 36px;
+  font-weight: 600;
+}
+
+.sectionLede {
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+/* ---------- grids and cards ---------- */
+
+.grid2,
+.grid3 {
+  display: grid;
+  gap: 18px;
+}
+
+.grid2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.card {
+  padding: 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  transition: border-color 0.18s, background 0.18s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-raised);
+  }
+}
+
+.cardNum {
+  display: block;
+  margin-bottom: 16px;
+  color: var(--accent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+}
+
+.cardTitle {
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.cardBody {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* ---------- numbered steps ---------- */
+
+.steps {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(3, 1fr);
+  counter-reset: step;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  padding: 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  counter-increment: step;
+}
+
+.step::before {
+  content: counter(step);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 18px;
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+}
+
+/* ---------- signal rows ---------- */
+
+.signals {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.signalRow {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 28px;
+  padding: 24px 26px;
+  border-bottom: 1px solid var(--border);
+}
+
+.signalRow:last-child {
+  border-bottom: none;
+}
+
+.signalLabel {
+  color: var(--text);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 14px;
+}
+
+.signalWhat {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.signalPredicts {
+  margin-top: 8px;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+/* ---------- mocked profile card ---------- */
+
+.profile {
+  max-width: 560px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.profileHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
+.profileName {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.profileMeta {
+  color: var(--faint);
+  font-size: 14px;
+}
+
+.profileScore {
+  color: var(--accent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.profileBody {
+  padding: 22px 24px;
+}
+
+.profileList {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+}
+
+.profileList li {
+  display: flex;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.profileList li::before {
+  content: "+";
+  color: var(--accent);
+  font-family: var(--font-geist-mono), monospace;
+}
+
+.pillRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.pill {
+  padding: 5px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+}
+
+.caption {
+  margin-top: 16px;
+  color: var(--faint);
+  font-size: 14px;
+}
+
+/* ---------- bullet list ---------- */
+
+.bullets {
+  display: grid;
+  gap: 20px;
+  max-width: 720px;
+  list-style: none;
+}
+
+.bullets li {
+  padding-left: 20px;
+  border-left: 2px solid var(--accent-line);
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.bullets strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* ---------- footer ---------- */
+
+.footer {
+  padding: var(--section-y) 0 72px;
+}
+
+.footerCard {
+  padding: 56px 48px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--surface-raised), var(--surface));
+  text-align: center;
+}
+
+.footerTitle {
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.footerSub {
+  margin: 16px auto 0;
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.footerCta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.colophon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  justify-content: space-between;
+  margin-top: 56px;
+  padding-top: 26px;
+  border-top: 1px solid var(--border);
+  color: var(--faint);
+  font-size: 14px;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .headline {
+    font-size: 44px;
+  }
+
+  .grid3,
+  .steps {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 72px 0 64px;
+  }
+
+  .inner {
+    padding: 0 20px;
+  }
+
+  .headline {
+    font-size: 34px;
+  }
+
+  .sub {
+    font-size: 17px;
+  }
+
+  .sectionTitle {
+    font-size: 27px;
+  }
+
+  .grid2,
+  .grid3,
+  .steps {
+    grid-template-columns: 1fr;
+  }
+
+  .signalRow {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .footerCard {
+    padding: 36px 24px;
+  }
+
+  .footerTitle {
+    font-size: 25px;
+  }
+}
