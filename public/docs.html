@@ -43,9 +43,9 @@
   </nav>
 
   <table>
-    <tr><th>App</th><td><a href="/">labscout-jakdemir.vercel.app</a></td></tr>
-    <tr><th>REST API</th><td><code>POST https://labscout-jakdemir.vercel.app/api/search</code></td></tr>
-    <tr><th>MCP</th><td><code>https://labscout-jakdemir.vercel.app/api/mcp</code> (Streamable HTTP, no auth)</td></tr>
+    <tr><th>App</th><td><a href="/">labscout-nyc.vercel.app</a></td></tr>
+    <tr><th>REST API</th><td><code>POST https://labscout-nyc.vercel.app/api/search</code></td></tr>
+    <tr><th>MCP</th><td><code>https://labscout-nyc.vercel.app/api/mcp</code> (Streamable HTTP, no auth)</td></tr>
     <tr><th>Repo</th><td><a href="https://github.com/jakdemir/labscout">github.com/jakdemir/labscout</a></td></tr>
     <tr><th>Offline demo</th><td><a href="/?mock=1">/?mock=1</a> renders canned results if the Wi-Fi dies</td></tr>
   </table>
@@ -104,7 +104,7 @@
   <!-- 3 -->
   <h2 id="api">3. REST API</h2>
   <p><code>POST /api/search</code> takes JSON <code>{"q": "&lt;thesis&gt;"}</code> and returns the full result. No auth. Allow up to 60 seconds; usually it takes 10–20. Repeating a query on the same server instance comes back from cache instantly.</p>
-  <pre><code>curl -s -X POST https://labscout-jakdemir.vercel.app/api/search \
+  <pre><code>curl -s -X POST https://labscout-nyc.vercel.app/api/search \
   -H 'content-type: application/json' \
   -d '{"q":"AI for drug discovery"}'</code></pre>
   <h3>Response shape</h3>
@@ -134,29 +134,29 @@
   <h2 id="mcp">4. MCP endpoint</h2>
   <p>Labscout is also an MCP server, so any agent can source students as a tool call.</p>
   <table>
-    <tr><th>URL</th><td><code>https://labscout-jakdemir.vercel.app/api/mcp</code></td></tr>
+    <tr><th>URL</th><td><code>https://labscout-nyc.vercel.app/api/mcp</code></td></tr>
     <tr><th>Transport</th><td>Streamable HTTP. Stateless, JSON responses, no auth.</td></tr>
     <tr><th>Tool</th><td><code>search_students(query: string, limit?: 1–10)</code> returns a markdown shortlist plus the full JSON in <code>structuredContent</code>.</td></tr>
   </table>
 
   <h3>Claude Code</h3>
-  <pre><code>claude mcp add --transport http labscout https://labscout-jakdemir.vercel.app/api/mcp</code></pre>
+  <pre><code>claude mcp add --transport http labscout https://labscout-nyc.vercel.app/api/mcp</code></pre>
   <h3>Cursor / Claude Desktop / any client with remote MCP</h3>
   <pre><code>{
   "mcpServers": {
-    "labscout": { "url": "https://labscout-jakdemir.vercel.app/api/mcp" }
+    "labscout": { "url": "https://labscout-nyc.vercel.app/api/mcp" }
   }
 }</code></pre>
-  <p class="muted">For a client that only supports stdio servers, wrap it: <code>"command": "npx", "args": ["-y", "mcp-remote", "https://labscout-jakdemir.vercel.app/api/mcp"]</code>.</p>
+  <p class="muted">For a client that only supports stdio servers, wrap it: <code>"command": "npx", "args": ["-y", "mcp-remote", "https://labscout-nyc.vercel.app/api/mcp"]</code>.</p>
   <h3>Hermes Agent (<code>~/.hermes/config.yaml</code>)</h3>
   <pre><code>mcp_servers:
   labscout:
-    url: https://labscout-jakdemir.vercel.app/api/mcp</code></pre>
+    url: https://labscout-nyc.vercel.app/api/mcp</code></pre>
   <h3>Test it with curl</h3>
-  <pre><code>curl -s https://labscout-jakdemir.vercel.app/api/mcp -H 'content-type: application/json' \
+  <pre><code>curl -s https://labscout-nyc.vercel.app/api/mcp -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 
-curl -s https://labscout-jakdemir.vercel.app/api/mcp -H 'content-type: application/json' \
+curl -s https://labscout-nyc.vercel.app/api/mcp -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_students","arguments":{"query":"robotics manipulation","limit":3}}}'</code></pre>
   <p>Then ask your agent: <em>"Use labscout to find students working on battery materials and draft intro emails for the top 3."</em></p>
 

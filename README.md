@@ -2,7 +2,7 @@
 
 **PitchBook for students.** Describe your investment thesis in plain English; get a ranked list of current Columbia, NYU, Cornell and Cornell Tech students already publishing on it — each with a 3-line "why this student" brief and source links.
 
-Live: https://labscout-jakdemir.vercel.app
+Live: https://labscout-nyc.vercel.app
 
 Built at **Deal Flow — NYC's first VC hackathon** (Betaworks, October 24, 2026), Track 1: Sourcing.
 

@@ -1,4 +1,4 @@
-// Labscout MCP endpoint: POST https://labscout-jakdemir.vercel.app/api/mcp
+// Labscout MCP endpoint: POST https://labscout-nyc.vercel.app/api/mcp
 import { handleRpc } from "../lib/mcp.ts";
 import { runSearch } from "../lib/search.ts";
 
