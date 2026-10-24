@@ -16,7 +16,7 @@ const { runSearch } = await import("../lib/search.ts");
 const { handleRpc } = await import("../lib/mcp.ts");
 
 const PUB = new URL("../public/", import.meta.url).pathname;
-const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png" };
+const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".md": "text/markdown" };
 
 http.createServer(async (req, res) => {
   if (req.method === "POST" && req.url === "/api/search") {
